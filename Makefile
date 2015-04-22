@@ -19,7 +19,7 @@ DEPSSERVER = $(patsubst %,$(IDIRSERVER)/%,$(_DEPSSERVER))
 
 # Lista dei file che verranno prodotti nella directory dei file compilati da
 # parte del server (prima vengono listati poi viene aggiunta la directory)
-_OBJSERVER = main_server.o thread_main.o gestione_utenti.o
+_OBJSERVER = main_server.o thread_main.o gestione_utenti.o hash.o lista.o
 OBJSERVER = $(patsubst %,$(ODIRSERVER)/%,$(_OBJSERVER))
 
 # Specifichiamo che clean, install e chat sono comandi e non file

@@ -3,6 +3,11 @@
 
 #include <hash.h>
 
+/*
+    La tabella di HASH verrà mantenuta durante tutta la sessione, ma per
+    mantenere l'integrità della stessa solo le funzioni presenti in questo
+    file potranno accederci, e lo faranno in mutua esclusione
+*/
 static hash_t HASH_TABLE;
 
 /*

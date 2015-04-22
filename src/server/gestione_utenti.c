@@ -3,19 +3,14 @@
 
 #include <thread_main.h>
 #include <gestione_utenti.h>
-#include <hash.h>
 
 /*
-    Per la descrizione delle funzioni presenti in questo file consultare i
-    rispettivi header, indicati da un commento all'inizio della funzione
-    stessa
+    Per la descrizione generale delle funzioni presenti in questo file
+    consultare i rispettivi header, indicati da un commento all'inizio delle
+    funzioni stesse
 */
 
-/*
-    La tabella di HASH verrà mantenuta durante tutta la sessione, ma per
-    mantenere l'integrità della stessa solo le funzioni presenti in questo
-    file potranno accederci, e lo faranno in mutua esclusione
-*/
+// gestione_utenti.h
 static hash_t HASH_TABLE;
 
 // gestione_utenti.h
@@ -85,13 +80,15 @@ void carica_utenti(char *file_utenti)
                     con quella successiva
                 */
                 if (username != NULL && nome != NULL && mail != NULL) {
-                    // Popoliamo la struct nuovo utente e inseriamola in hash
+                    /*
+                        Popoliamo la struct nuovo utente e inseriamola in hash
+                        con le funzioni che ci sono state fornite
+                    */
                     utente->uname    = username;
                     utente->fullname = nome;
                     utente->email    = mail;
                     utente->sockid   = -1;
                     INSERISCIHASH(utente->uname, (void*) utente, HASH_TABLE);
-                    printf("%s ` %s ` %s \n", username, nome, mail);
                 }
             }
 
@@ -100,7 +97,7 @@ void carica_utenti(char *file_utenti)
         } else {
             // TODO: gestione errori
         }
-    }
+    } // endif access(file_utenti, 4) == 0
 
     /*
         Poiché il file può non esistere, non c'è un branch else, semplicemente
