@@ -9,7 +9,7 @@ ODIRSERVER=obj/server
 LIBS=-lm
 
 # Variabili di make
-CFLAGSSERVER=-I$(IDIRSERVER)
+CFLAGSSERVER=-I$(IDIRSERVER) -Wall
 
 # Lista delle dipendenze da buildare prese dalla directory include
 # (prima vengono listate e poi viene posta prima ai nomi la directory che li
