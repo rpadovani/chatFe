@@ -48,6 +48,7 @@ $(ODIRSERVER)/%.o: src/server/%.c $(DEPSSERVER)
 chat: $(OBJSERVER)
 	gcc -o $(ODIRSERVER)/chat-server $^ $(CFLAGSSERVER) $(LIBS)
 
+# Copiamo i file eseguibli nella cartella bin
 install:
 	cp $(ODIRSERVER)/chat-server bin/chat-server
 
