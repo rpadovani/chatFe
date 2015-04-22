@@ -14,12 +14,12 @@ CFLAGSSERVER=-I$(IDIRSERVER)
 # Lista delle dipendenze da buildare prese dalla directory include
 # (prima vengono listate e poi viene posta prima ai nomi la directory che li
 # contiene)
-_DEPSSERVER = thread_main.h
+_DEPSSERVER = thread_main.h gestione_utenti.h hash.h common.h lista.h
 DEPSSERVER = $(patsubst %,$(IDIRSERVER)/%,$(_DEPSSERVER))
 
 # Lista dei file che verranno prodotti nella directory dei file compilati da
 # parte del server (prima vengono listati poi viene aggiunta la directory)
-_OBJSERVER = main_server.o thread_main.o
+_OBJSERVER = main_server.o thread_main.o gestione_utenti.o
 OBJSERVER = $(patsubst %,$(ODIRSERVER)/%,$(_OBJSERVER))
 
 # Specifichiamo che clean, install e chat sono comandi e non file

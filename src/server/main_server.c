@@ -1,5 +1,7 @@
 #include <stdio.h>
 
+#include <thread_main.h>
+
 /*
     La funzione main prende in input gli elementi passati da linea di comando:
     se non sono esattamente due, come previsto, stampa un errore ed esce.
@@ -35,7 +37,7 @@ int main(int argc, char *argv[])
             fine e questo è il figlio, quindi possiamo lanciare il demone.
             Al demone passiamo gia i nomi dei due file separati
         */
-        printf("Lancia server\n");
+        thread_main(argv[1], argv[2]);
     } else if (pid == -1) {
         /*
             Il pid è -1, la fork è fallita: registriamo l'errore e terminiamo
