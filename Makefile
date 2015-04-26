@@ -5,8 +5,9 @@ IDIRSERVER=src/server/include
 # Directory dove vengono inseriti i file compilati
 ODIRSERVER=obj/server
 
-# Macro per includere le librerie necessarie (al momento solo -lm)
-LIBS=-lm
+# Macro per includere le librerie di sistema necessarie, ed eventualmente
+# altre flag di gcc
+LIBS=-lpthread
 
 # Variabili di make
 CFLAGSSERVER=-I$(IDIRSERVER) -Wall

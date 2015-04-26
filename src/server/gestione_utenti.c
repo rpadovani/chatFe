@@ -3,6 +3,7 @@
 
 #include <thread_main.h>
 #include <gestione_utenti.h>
+#include <main_server.h>
 
 /*
     Per la descrizione generale delle funzioni presenti in questo file
@@ -10,11 +11,14 @@
     funzioni stesse
 */
 
+// main_server.h
+char *file_utenti;
+
 // gestione_utenti.h
 static hash_t HASH_TABLE;
 
 // gestione_utenti.h
-void carica_utenti(char *file_utenti)
+void carica_utenti(void)
 {
     /*
         Controlliamo se il file esiste con la funzione access(). È disponibile

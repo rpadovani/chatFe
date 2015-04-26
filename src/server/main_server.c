@@ -1,9 +1,13 @@
 #include <stdio.h>
 #include <unistd.h>
+#include <pthread.h>
 
 #include <thread_main.h>
 
+// main_server.h
 int go;
+char *file_log;
+char *file_utenti;
 
 /*
     La funzione main prende in input gli elementi passati da linea di comando:
@@ -17,6 +21,11 @@ int go;
 int main(int argc, char *argv[])
 {
     /*
+        La variabile memorizza un riferimento al thread principale
+     */
+    pthread_t main_thread;
+
+    /*
         argc deve essere uguale a 3, il primo parametro è il nome del comando,
         gli altri due parametri sono il nome del file degli utenti e il nome
         del file di log
@@ -25,6 +34,9 @@ int main(int argc, char *argv[])
         fprintf(stderr, "Il programma deve avere esattamente due parametri\n");
         return -1;
     }
+
+    file_utenti = argv[2];
+    file_log = argv[3];
 
     /*
         Il programma può partire, impostiamo il valore di go a un valore diverso
@@ -43,10 +55,23 @@ int main(int argc, char *argv[])
     if (pid == 0) {
         /*
             Primo branch dell'if: il pid è zero, quindi la fork è andata a buon
-            fine e questo è il figlio, quindi possiamo lanciare il demone.
-            Al demone passiamo gia i nomi dei due file separati
+            fine e questo è il figlio, quindi possiamo lanciare thread main.
          */
-        thread_main(argv[1], argv[2]);
+        int codice_ritorno = pthread_create(
+                                                &main_thread,
+                                                NULL,
+                                                thread_main,
+                                                NULL
+                                            );
+
+        /*
+            Qualcosa è andato storto nella creazione del thread!
+            Segnaliamo l'errore e moriamo
+         */
+        if (codice_ritorno) {
+            fprintf(stderr, "Impossibile creare il thread main\n");
+            return -1;
+        }
     } else if (pid == -1) {
         /*
             Il pid è -1, la fork è fallita: registriamo l'errore e terminiamo

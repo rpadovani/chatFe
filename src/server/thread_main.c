@@ -1,10 +1,13 @@
 #include <stdio.h>
-#include <unistd.h>     /* close() */
+#include <unistd.h>
+#include <pthread.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
 
 #include <thread_main.h>
 #include <gestione_utenti.h>
+#include <main_server.h>
+
 /*
     Per la descrizione delle funzioni presenti in questo file consultare i
     rispettivi header, indicati da un commento all'inizio della funzione
@@ -12,7 +15,7 @@
  */
 
 /*
-    La costante PROTOCOLLO indica con quale protocollo creare la socket.
+    La define PROTOCOLLO indica con quale protocollo creare la socket.
     Accetta due valori:
     - AF_UNIX se il server e i client girano sullo stesso sistema
     - AF_INET per connettersi ad un server esterno
@@ -20,7 +23,7 @@
 #define PROTOCOLLO AF_INET
 
 /*
-    La costnate SERVER_PORT definisce la porta su cui il server rimarrà in
+    La cdefine SERVER_PORT definisce la porta su cui il server rimarrà in
     ascolto
  */
 #define SERVER_PORT 8888
@@ -29,7 +32,7 @@
 int go;
 
 // thread_main.h
-int thread_main(char *file_utenti, char *file_log)
+void *thread_main(void *arg)
 {
     /*
         La variabile rappresenta il riferimento alla socket che verrà aperta
@@ -59,7 +62,7 @@ int thread_main(char *file_utenti, char *file_log)
 
     // Per prima cosa ci occupiamo di caricare gli utenti nella tabella hash
     // gestione_utenti.h
-    carica_utenti(file_utenti);
+    carica_utenti();
 
     /*
         Abbiamo caricato gli utenti, ora proviamo a creare la socket.
@@ -84,7 +87,6 @@ int thread_main(char *file_utenti, char *file_log)
             ) < 0) {
             // TODO: gestione errori
             printf("Bind fallita\n");
-            return -1;
         }
 
         /*
@@ -119,5 +121,9 @@ int thread_main(char *file_utenti, char *file_log)
         printf("Impossibile creare la socket\n");
     }
 
-    return 0;
+    /*
+        ...tutti quei momenti andranno perduti nel tempo come lacrime nella
+        pioggia. È tempo di morire.
+     */
+    pthread_exit(NULL);
 }

@@ -11,8 +11,8 @@
 static hash_t HASH_TABLE;
 
 /*
-    La funzione si occupa di aprire il file passato come argomento, leggerlo,
+    La funzione si occupa di aprire il file degli utent, leggerlo,
     caricare gli utenti ivi contenuti nella tabella hash, e poi chiuderlo
 */
-void carica_utenti(char *file_utenti);
+void carica_utenti(void);
 #endif

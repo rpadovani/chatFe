@@ -5,11 +5,9 @@
     Il thread main si occupa di gestire tutto il server, così come descritto
     nella consegna.
 
-    Prende in input due array di caratteri che indicano, rispettivamente, il
-    file che funge da database utenti e il file che si utilizza come log
-
-    Ritorna -1 in caso di fallimento
+    Essendo una funzione puntata alla creazione di un thread è un puntatore e
+    non ritorna nulla, come richiesto da pthread_create
 */
-int thread_main(char *file_utenti, char *file_log);
+void *thread_main(void *arg);
 
 #endif
