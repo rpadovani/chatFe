@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
         int codice_ritorno = pthread_create(
                                                 &main_thread,
                                                 NULL,
-                                                thread_main,
+                                                &thread_main,
                                                 NULL
                                             );
 
@@ -72,6 +72,8 @@ int main(int argc, char *argv[])
             fprintf(stderr, "Impossibile creare il thread main\n");
             return -1;
         }
+
+        pthread_join(main_thread, NULL);
     } else if (pid == -1) {
         /*
             Il pid è -1, la fork è fallita: registriamo l'errore e terminiamo

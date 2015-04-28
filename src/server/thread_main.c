@@ -5,6 +5,7 @@
 #include <sys/socket.h>
 
 #include <thread_main.h>
+#include <thread_worker.h>
 #include <gestione_utenti.h>
 #include <main_server.h>
 
@@ -21,6 +22,8 @@
     - AF_INET per connettersi ad un server esterno
  */
 #define PROTOCOLLO AF_INET
+
+#define MAX_CLIENT 50
 
 /*
     La cdefine SERVER_PORT definisce la porta su cui il server rimarrà in
@@ -60,6 +63,17 @@ void *thread_main(void *arg)
 
     struct sockaddr_in client;
 
+    // La variabile contiene l'id del thread che viene creato per il worker
+    pthread_t tid;
+
+    /*
+        Il thread deve essere creato come detached, per farlo bisogna passare
+        un attributo che qua creiamo alla funzione pthread_create
+     */
+    pthread_attr_t attr;
+    pthread_attr_init(&attr);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+
     // Per prima cosa ci occupiamo di caricare gli utenti nella tabella hash
     // gestione_utenti.h
     carica_utenti();
@@ -87,6 +101,7 @@ void *thread_main(void *arg)
             ) < 0) {
             // TODO: gestione errori
             printf("Bind fallita\n");
+            pthread_exit(NULL);
         }
 
         /*
@@ -98,8 +113,6 @@ void *thread_main(void *arg)
             listen(socket_id, 3);
 
             // Accettiamo le connessioni entranti
-            printf("Attendo connessioni...\n");
-
             connessione = sizeof(struct sockaddr_in);
 
             nuova_socket = accept(
@@ -112,8 +125,24 @@ void *thread_main(void *arg)
                 //TODO error
                 printf("Fallimento nella creazione della connessione\n");
             } else {
-            printf("FUCK YEAH\n");
-                //close(connessione);
+                /*
+                    Abbiamo creato una nuova connessione, creaiamo un nuovo
+                    thread e passiamo la connessione.
+                    Se la funzione di creazione ritorna qualcosa diverso da zero
+                    vuol dire che la creazione del thread è fallita, quindi
+                    stampiamo un'errore
+                 */
+                if (pthread_create(
+                                    &tid,
+                                    &attr,
+                                    &thread_worker,
+                                    (void *)&nuova_socket
+                                )
+                    ) {
+                    // TODO error
+                    printf("Fallimento nella creazione del thread\n");
+                    close(connessione);
+                }
             }
         } // end while
     } else {
