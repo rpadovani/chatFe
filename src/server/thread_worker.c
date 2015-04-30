@@ -19,15 +19,19 @@ void *thread_worker(void *connessione)
         sempre una sola variabile, perché non ho bisogno di mantenere
         disponibile più di un messaggio alla volta, poiché vengono loggati
     */
-    typedef struct {
-        char type ;             // message type
-        char *sender ;          // message sender
-        char *receiver ;        // message receiver
-        unsigned int msglen ;   // message length
-        char *msg ;             // message buffer
+    typedef struct Message {
+        char type;             // message type
+        char *sender;          // message sender
+        char *receiver;        // message receiver
+        unsigned int msglen;   // message length
+        char *msg;             // message buffer
     } msg_t;
 
-    msg_t *messaggio = malloc(sizeof(msg_t));
+    /*
+        Riferimento alla struttura per salvare i dati che vengono passati
+        dalla socket
+     */
+    msg_t *messaggio = malloc(sizeof(struct Message));
 
     /*
         Il buffer attraverso cui passiamo i messaggi. La prima cosa che leggo
@@ -46,64 +50,87 @@ void *thread_worker(void *connessione)
      */
     int lunghezza_stringa;
 
+    // Contatore usato da 0 a 3 per evitare di ripetere il codice
+    int i;
+
     /*
         Il worker rimane in ascolto fintanto che il server non si ferma o il
         client si disconnette
      */
     while (go) {
-        // Puliamo il buffer per leggere il tipo del messaggio
-        bzero(buffer, sizeof(char));
-
-        /*
-            Per prima cosa leggiamo il tipo di messaggio e salviamolo nella
-            struct
-         */
-        if (read(socket, buffer, sizeof(buffer)) >= 0) {
+        // Creiamo lo spazio e leggiamo il primo carattere
+        buffer = realloc(buffer, sizeof(char));
+        if (read(socket, buffer, sizeof(char)) == 1) {
             // Abbiamo letto il tipo di messaggio, salviamolo
             messaggio->type = buffer[0];
-            printf("type : %c\n", messaggio->type );
-
         } else {
             // todo error
             printf("Errore leggendo dalla socket\n");
         }
 
         /*
-            Riallochiamo il buffer per leggere la dimensione del prossimo campo.
-            Oltre alla lunghezza del campo dobbiamo leggere anche lo shebang
-            Se non c'è lo shebang ritorniamo un errore
-        */
-        buffer = realloc(buffer, sizeof(char));
-        bzero(buffer, sizeof(char));
+            Dopo il primo carattere abbiamo una serie di 3 blocchi formati
+            nello stesso modo.
 
-        if (read(socket, buffer, sizeof(char)) >= 0) {
-            if (buffer[0] == '#') {
-                buffer = realloc(buffer, sizeof(int));
-                bzero(buffer, sizeof(int));
-
-                // Leggiamo la dimensione della prossima stringa da leggere
-                lunghezza_stringa = buffer[0];
-                printf("lunghezza = %i\n", lunghezza_stringa);
-                buffer = realloc(
-                                    buffer,
-                                    sizeof(char) * (lunghezza_stringa + 1)
-                                );
-
-                if (read(socket, buffer, sizeof(buffer)) >= 0) {
-                    strcpy(messaggio->sender, buffer);
-                    printf("sender: %s\n", messaggio->sender);
-                } else {
-                    // todo error
-                    printf("Errore leggendo dalla socket\n");
-                }
-            } else {
-                // todo error
-                printf("Errore nella formattazione della stringa, scarto...\n");
+            Prima 4 byte di int, poi n byte di messaggio, dove n è il numero
+            indicato nei primi 4 byte
+         */
+        for (i = 0; i < 3; i++) {
+            // Il buffer deve essere pronto a leggere un'int
+            buffer = realloc(buffer, sizeof(int));
+            // Leggiamo la lunghezza della stringa
+            if (read(socket, buffer, sizeof(int)) != sizeof(int)) {
+                printf("WOPS 1\n");
             }
-        } else {
-            // todo error
-            printf("Errore leggendo dalla socket\n");
+
+            /*
+                A questo punto sappiamo la lunghezza del prossimo campo da
+                leggere.
+                Convertiamo la dimensione letta in un'int, e allochiamo lo
+                spazio di cui abbiamo bisogno
+             */
+            lunghezza_stringa = atoi(buffer) * sizeof(char);
+
+            /*
+                Leggiamo il nostro prossimo campo, di cui sappiamo la lunghezza
+                Se non riusciamo a leggere tutto il campo, generiamo un errore
+             */
+            buffer = realloc(buffer, lunghezza_stringa);
+            if (read(socket, buffer, lunghezza_stringa) != lunghezza_stringa) {
+                printf("WOPS 2\n");
+            }
+
+            /*
+                Abbiamo 3 campi, al primo giro leggiamo il mittente, poi il
+                destinatario, poi il messaggio stesso.
+
+                Ad ognuno aggiungiamo il terminatore di stringa
+             */
+            switch (i) {
+                case 0:
+                    messaggio->sender = malloc(lunghezza_stringa + 1);
+                    strcpy(messaggio->sender, buffer);
+                    messaggio->sender[lunghezza_stringa] = '\0';
+                    break;
+                case 1:
+                    messaggio->receiver = malloc(lunghezza_stringa + 1);
+                    strcpy(messaggio->receiver, buffer);
+                    messaggio->receiver[lunghezza_stringa] = '\0';
+                    break;
+                case 2:
+                    messaggio->msg = malloc(lunghezza_stringa + 1);
+                    strcpy(messaggio->msg, buffer);
+                    messaggio->msg[lunghezza_stringa] = '\0';
+                    break;
+                default:
+                    printf("Questo messaggio non sarà mai stampato\n");
+            }
         }
+
+        printf("tipo: %c\n", messaggio->type);
+        printf("mittente: %s\n", messaggio->sender);
+        printf("destinatario: %s\n", messaggio->receiver);
+        printf("messaggio: %s\n", messaggio->msg);
     } // end while
 
     // Prima di uscire chiudiamo la socket
