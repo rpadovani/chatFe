@@ -23,8 +23,6 @@
  */
 #define PROTOCOLLO AF_INET
 
-#define MAX_CLIENT 50
-
 /*
     La cdefine SERVER_PORT definisce la porta su cui il server rimarrà in
     ascolto

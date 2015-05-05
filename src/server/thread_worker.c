@@ -57,16 +57,9 @@ void *thread_worker(void *connessione)
         Il worker rimane in ascolto fintanto che il server non si ferma o il
         client si disconnette
      */
-    while (go) {
-        // Creiamo lo spazio e leggiamo il primo carattere
-        buffer = realloc(buffer, sizeof(char));
-        if (read(socket, buffer, sizeof(char)) == 1) {
-            // Abbiamo letto il tipo di messaggio, salviamolo
-            messaggio->type = buffer[0];
-        } else {
-            // todo error
-            printf("Errore leggendo dalla socket\n");
-        }
+    while (go && read(socket, buffer, sizeof(char)) > 0) {
+        // Leggiamo il primo carattere che rappresenta il tipo di messaggio
+        messaggio->type = buffer[0];
 
         /*
             Dopo il primo carattere abbiamo una serie di 3 blocchi formati
@@ -80,9 +73,8 @@ void *thread_worker(void *connessione)
             buffer = realloc(buffer, sizeof(int));
             // Leggiamo la lunghezza della stringa
             if (read(socket, buffer, sizeof(int)) != sizeof(int)) {
-                printf("WOPS 1\n");
+                printf("WOPS 1 %s\n", buffer);
             }
-
             /*
                 A questo punto sappiamo la lunghezza del prossimo campo da
                 leggere.
@@ -95,35 +87,37 @@ void *thread_worker(void *connessione)
                 Leggiamo il nostro prossimo campo, di cui sappiamo la lunghezza
                 Se non riusciamo a leggere tutto il campo, generiamo un errore
              */
-            buffer = realloc(buffer, lunghezza_stringa);
-            if (read(socket, buffer, lunghezza_stringa) != lunghezza_stringa) {
-                printf("WOPS 2\n");
-            }
+            if (lunghezza_stringa > 0) {
+                buffer = realloc(buffer, lunghezza_stringa);
+                if (read(socket, buffer, lunghezza_stringa) != lunghezza_stringa) {
+                    printf("WOPS 2\n");
+                }
 
-            /*
-                Abbiamo 3 campi, al primo giro leggiamo il mittente, poi il
-                destinatario, poi il messaggio stesso.
+                /*
+                    Abbiamo 3 campi, al primo giro leggiamo il mittente, poi il
+                    destinatario, poi il messaggio stesso.
 
-                Ad ognuno aggiungiamo il terminatore di stringa
-             */
-            switch (i) {
-                case 0:
-                    messaggio->sender = malloc(lunghezza_stringa + 1);
-                    strcpy(messaggio->sender, buffer);
-                    messaggio->sender[lunghezza_stringa] = '\0';
-                    break;
-                case 1:
-                    messaggio->receiver = malloc(lunghezza_stringa + 1);
-                    strcpy(messaggio->receiver, buffer);
-                    messaggio->receiver[lunghezza_stringa] = '\0';
-                    break;
-                case 2:
-                    messaggio->msg = malloc(lunghezza_stringa + 1);
-                    strcpy(messaggio->msg, buffer);
-                    messaggio->msg[lunghezza_stringa] = '\0';
-                    break;
-                default:
-                    printf("Questo messaggio non sarà mai stampato\n");
+                    Ad ognuno aggiungiamo il terminatore di stringa
+                 */
+                switch (i) {
+                    case 0:
+                        messaggio->sender = malloc(lunghezza_stringa + 1);
+                        strcpy(messaggio->sender, buffer);
+                        messaggio->sender[lunghezza_stringa] = '\0';
+                        break;
+                    case 1:
+                        messaggio->receiver = malloc(lunghezza_stringa + 1);
+                        strcpy(messaggio->receiver, buffer);
+                        messaggio->receiver[lunghezza_stringa] = '\0';
+                        break;
+                    case 2:
+                        messaggio->msg = malloc(lunghezza_stringa + 1);
+                        strcpy(messaggio->msg, buffer);
+                        messaggio->msg[lunghezza_stringa] = '\0';
+                        break;
+                    default:
+                        printf("Questo messaggio non sarà mai stampato\n");
+                }
             }
         }
 
@@ -131,6 +125,11 @@ void *thread_worker(void *connessione)
         printf("mittente: %s\n", messaggio->sender);
         printf("destinatario: %s\n", messaggio->receiver);
         printf("messaggio: %s\n", messaggio->msg);
+
+        while (read(socket, buffer, sizeof(char)) > 0) {
+            printf("! %s\n", buffer);
+        }
+
     } // end while
 
     // Prima di uscire chiudiamo la socket
