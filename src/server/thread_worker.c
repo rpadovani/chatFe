@@ -50,7 +50,7 @@ void *thread_worker(void *connessione)
      */
     int lunghezza_stringa;
 
-    // Contatore usato da 0 a 3 per evitare di ripetere il codice
+    // Contatore usato da 0 a 2 per evitare di ripetere il codice
     int i;
 
     /*
@@ -62,13 +62,13 @@ void *thread_worker(void *connessione)
         messaggio->type = buffer[0];
 
         /*
-            Dopo il primo carattere abbiamo una serie di 3 blocchi formati
+            Dopo il primo carattere abbiamo una serie di 2 blocchi formati
             nello stesso modo.
 
             Prima 4 byte di int, poi n byte di messaggio, dove n è il numero
             indicato nei primi 4 byte
          */
-        for (i = 0; i < 3; i++) {
+        for (i = 0; i < 2; i++) {
             // Il buffer deve essere pronto a leggere un'int
             buffer = realloc(buffer, sizeof(int));
             // Leggiamo la lunghezza della stringa
@@ -94,23 +94,22 @@ void *thread_worker(void *connessione)
                 }
 
                 /*
-                    Abbiamo 3 campi, al primo giro leggiamo il mittente, poi il
-                    destinatario, poi il messaggio stesso.
+                    Abbiamo 2 campi, al primo giro leggiamo il destinatario,
+                    poi il messaggio stesso.
+
+                    Per ogni messaggio che manda il client il sender è vuoto.
+                    In alcuni casi anche il destinatario potrebbe essere
+                    vuoto.
 
                     Ad ognuno aggiungiamo il terminatore di stringa
                  */
                 switch (i) {
                     case 0:
-                        messaggio->sender = malloc(lunghezza_stringa + 1);
-                        strcpy(messaggio->sender, buffer);
-                        messaggio->sender[lunghezza_stringa] = '\0';
-                        break;
-                    case 1:
                         messaggio->receiver = malloc(lunghezza_stringa + 1);
                         strcpy(messaggio->receiver, buffer);
                         messaggio->receiver[lunghezza_stringa] = '\0';
                         break;
-                    case 2:
+                    case 1:
                         messaggio->msg = malloc(lunghezza_stringa + 1);
                         strcpy(messaggio->msg, buffer);
                         messaggio->msg[lunghezza_stringa] = '\0';
@@ -122,14 +121,8 @@ void *thread_worker(void *connessione)
         }
 
         printf("tipo: %c\n", messaggio->type);
-        printf("mittente: %s\n", messaggio->sender);
         printf("destinatario: %s\n", messaggio->receiver);
         printf("messaggio: %s\n", messaggio->msg);
-
-        while (read(socket, buffer, sizeof(char)) > 0) {
-            printf("! %s\n", buffer);
-        }
-
     } // end while
 
     // Prima di uscire chiudiamo la socket
