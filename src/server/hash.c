@@ -30,7 +30,7 @@ hdata_t * CERCALISTA ( char * key, lista L ) {
   r = NULL;
   p = PRIMOLISTA(L);
   found = 0;
-  //fprintf(stderr, "looking for key: %s\n", key);
+
   while ( (!found) && (!FINELISTA(p,L)) ) {
     k = ((hdata_t *)(p->elemento))->uname;
     if ( strcmp (k, key ) == 0 ) {

@@ -35,8 +35,8 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    file_utenti = argv[2];
-    file_log = argv[3];
+    file_utenti = argv[1];
+    file_log = argv[2];
 
     /*
         Il programma può partire, impostiamo il valore di go a un valore diverso

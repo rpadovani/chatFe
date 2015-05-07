@@ -7,9 +7,13 @@
 #include <sys/socket.h>
 
 #include <thread_worker.h>
+#include <gestione_utenti.h>
 
 // main_server.h
 int go;
+
+#define MSG_OK 'O'
+#define MSG_ERROR 'E'
 
 // thread_worker.h
 void *thread_worker(void *connessione)
@@ -41,8 +45,15 @@ void *thread_worker(void *connessione)
      */
     char *buffer = malloc(sizeof(char));
 
+    /*
+        Array di char che conterrà la risposta da inviare al client, contenente
+        eventuali messaggi di errore se l'operazione è fallita, oppure un ack
+        in caso di successo
+     */
+    char risposta;
+
     // Riferimento alla socket passato per argometno
-    int socket = *(int*)connessione;
+    int socket_id = *(int*)connessione;
 
     /*
         Salveremo man mano qua la lunghezza della successiva stringa da leggere
@@ -57,7 +68,7 @@ void *thread_worker(void *connessione)
         Il worker rimane in ascolto fintanto che il server non si ferma o il
         client si disconnette
      */
-    while (go && read(socket, buffer, sizeof(char)) > 0) {
+    while (go && read(socket_id, buffer, sizeof(char)) > 0) {
         // Leggiamo il primo carattere che rappresenta il tipo di messaggio
         messaggio->type = buffer[0];
 
@@ -72,7 +83,7 @@ void *thread_worker(void *connessione)
             // Il buffer deve essere pronto a leggere un'int
             buffer = realloc(buffer, sizeof(int));
             // Leggiamo la lunghezza della stringa
-            if (read(socket, buffer, sizeof(int)) != sizeof(int)) {
+            if (read(socket_id, buffer, sizeof(int)) != sizeof(int)) {
                 printf("WOPS 1 %s\n", buffer);
             }
             /*
@@ -89,7 +100,7 @@ void *thread_worker(void *connessione)
              */
             if (lunghezza_stringa > 0) {
                 buffer = realloc(buffer, lunghezza_stringa);
-                if (read(socket, buffer, lunghezza_stringa) != lunghezza_stringa) {
+                if (read(socket_id, buffer, lunghezza_stringa) != lunghezza_stringa) {
                     printf("WOPS 2\n");
                 }
 
@@ -120,12 +131,19 @@ void *thread_worker(void *connessione)
             }
         }
 
-        printf("tipo: %c\n", messaggio->type);
-        printf("destinatario: %s\n", messaggio->receiver);
-        printf("messaggio: %s\n", messaggio->msg);
+        if (messaggio->type == 'R') {
+            // gestore_utenti.h
+            risposta = registrazione_utente(messaggio->msg, socket_id);
+        } else if (messaggio->type == 'L') {
+            // gestore_utenti.h
+            risposta = login_utente(messaggio->msg, socket_id);
+        }
+
+        // Qualunque sia stata la risposta, la inviamo al client
+        write(socket_id, &risposta, 1);
     } // end while
 
     // Prima di uscire chiudiamo la socket
-    close(socket);
+    close(socket_id);
     pthread_exit(NULL);
 }

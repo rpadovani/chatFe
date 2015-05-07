@@ -49,6 +49,7 @@ posizione PREDLISTA (posizione p) {
 
 int FINELISTA (posizione p, lista L) {
   int finelista;
+
   finelista = (p == L) ? 1 : 0;
   return finelista;
 }

@@ -22,7 +22,7 @@
     La define SERVER_PORT definisce la porta su cui ci aspettiamo che il server
     sia in ascolto
  */
-#define SERVER_PORT 8888
+#define SERVER_PORT 8887
 
 #define MSG_LOGIN 'L'
 #define MSG_REGLOG 'R'
@@ -55,6 +55,7 @@ int main(int argc, char const *argv[])
     char *buffer = malloc(sizeof(char));
 
     char *username;
+    char *messaggio_registrazione;
 
     /*
         Per inviare il buffer dobbiamo saperne la dimensione.
@@ -93,21 +94,48 @@ int main(int argc, char const *argv[])
 
     // Proviamo a connetterci
     while (connect(socket_id, (struct sockaddr *)&client, sizeof(client)) < 0) {
-        sleep(1);
         numero_tentativi_connessione++;
+        printf("Connessione fallita. Ritento... [%i/10]\n", numero_tentativi_connessione);
+        sleep(1);
 
         if (numero_tentativi_connessione == 10) {
-            printf("Impossibile connettersi al server");
+            printf("Impossibile connettersi al server. Bye!\n");
             return -1;
         }
     }
+
+    /*
+        Se siamo arrivati qua o l'utente o vuole registrarsi o vuole fare
+        direttamente il login.
+        In ogni caso prendiamo l'username e facciamo il login
+     */
+    username = malloc(sizeof(argc == 4 ? argv[3] : argv[1]));
+    strcpy(username, argc == 4 ? argv[3] : argv[1]);
 
     /*
         Se l'utente ha inserito come primo argomento -r, iniziamo la procedura
         di registrazione, a cui poi seguirà il login
     */
     if (argc == 4 && strcmp(argv[1], "-r")) {
-        //registrazione
+        /*
+            Mesaggio di login, la struttura del messaggio da inviare
+            al server è la seguente:
+            - 1 byte che rappresenta il tipo di connessione
+            - 4 byte (1 int) che rappresentano la dimensione del
+                campo destinatario (in questo caso 0)
+            - 4 byte (1 int) che rappresenta la lunghezza del messaggio
+            - n byte di messaggio, in base alla lunghezza dello
+                stesso
+         */
+        dimensione_buffer = 1 + 4 + 4 + strlen(username);
+
+        /*
+            sprintf inserisce automaticamente un terminatore di
+            stringa quindi lasciamo lo spazio anche per quello
+         */
+        buffer = realloc(buffer, dimensione_buffer + 1);
+        sprintf(buffer, "%c0000%04zu%s", MSG_LOGIN, strlen(username), username);
+
     }
 
     /*
@@ -120,15 +148,6 @@ int main(int argc, char const *argv[])
 
         return -1;
     }
-
-    /*
-        Se siamo arrivati qua o l'utente si è registrato o vuole fare
-        direttamente il login.
-        In ogni caso prendiamo l'username e facciamo il login
-     */
-
-    username = malloc(sizeof(argc == 4 ? argv[3] : argv[1]));
-    strcpy(username, argc == 4 ? argv[3] : argv[1]);
 
     /*
         Mesaggio di login, la struttura del messaggio da inviare
@@ -155,7 +174,7 @@ int main(int argc, char const *argv[])
         perché grazie alla dimensione del campo il server
         sa esattamente quanti byte leggere
      */
-    if (send(socket_id, buffer, dimensione_buffer, 0) == -1) {
+    if (write(socket_id, buffer, dimensione_buffer) == -1) {
         printf("Impossibile effettuare il login");
         return -1;
     }
@@ -173,18 +192,20 @@ int main(int argc, char const *argv[])
         return -1;
     }
 
-    if (buffer != MSG_OK) {
+    if (buffer[0] != MSG_OK) {
         // Leggiamo quanto è lungo l'errore
-        buffer = realloc(buffer, sizeof(int));
-        read(socket_id, buffer, sizeof(int));
+        //buffer = realloc(buffer, sizeof(int));
+        //read(socket_id, buffer, sizeof(int));
 
         // Allochiamo lo spazio per il messaggio
-        buffer = realloc(buffer, atoi(buffer));
-        read(socket_id, buffer, sizeof(int));
+        //buffer = realloc(buffer, atoi(buffer));
+        //read(socket_id, buffer, sizeof(int));
 
-        printf("Impossibile effettuare il login: %s", buffer);
+        printf("Impossibile effettuare il login:");
         return -1;
     }
+
+    printf("Login effettuato con successo\n");
 
     // Crea i thread
 

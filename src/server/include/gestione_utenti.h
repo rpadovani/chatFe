@@ -8,11 +8,18 @@
     mantenere l'integrità della stessa solo le funzioni presenti in questo
     file potranno accederci, e lo faranno in mutua esclusione
 */
-static hash_t HASH_TABLE;
+//static hash_t HASH_TABLE;
 
 /*
     La funzione si occupa di aprire il file degli utent, leggerlo,
     caricare gli utenti ivi contenuti nella tabella hash, e poi chiuderlo
 */
 void carica_utenti(void);
+
+/*
+    La funzione cerca l'username passato come argomento nell'hash table.
+    Se l'username è presente e l'utente non è loggato esegue il login, altimenti
+    restituisce un errore
+ */
+char login_utente(char *username, int socket_id);
 #endif

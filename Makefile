@@ -12,8 +12,8 @@ ODIRCLIENT=obj/client
 LIBS=-lpthread
 
 # Variabili di make
-CFLAGSSERVER=-I$(IDIRSERVER) -Wall
-CFLAGSCLIENT=-I$(IDIRCLIENT) -Wall
+CFLAGSSERVER=-I$(IDIRSERVER) -Wall -Werror
+CFLAGSCLIENT=-I$(IDIRCLIENT) -Wall -Werror
 
 # Lista delle dipendenze da buildare prese dalla directory include
 # (prima vengono listate e poi viene posta prima ai nomi la directory che li
