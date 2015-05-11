@@ -2,10 +2,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <pthread.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
 
 #include <main_client.h>
+#include <thread_listener.h>
 
 /*
     La define PROTOCOLLO indica con quale protocollo creare la socket.
@@ -283,7 +285,26 @@ int main(int argc, char *argv[])
 
     printf("Login effettuato con successo\n");
 
-    // Crea i thread
+    /*
+        Arrivati a questo puto il login è avvenuto con successo. Dobbiamo quindi
+        creare i due thread che si occupano di gestire l'invio e la ricezione
+        dei messaggi
+     */
+    pthread_t thread_listener_id;
+    //pthread_t thread_writer_id;
 
+    if (pthread_create(
+            &thread_listener_id,
+            NULL,
+            &thread_listener,
+            (void *) &socket_id
+        ) != 0) {
+        printf("Impossible creare il thread listener");
+        return -1;
+    }
+
+    pthread_join(thread_listener_id, NULL);
+
+    close(socket_id);
     return 0;
 }

@@ -21,7 +21,7 @@ CFLAGSCLIENT=-I$(IDIRCLIENT) -Wall -Werror
 _DEPSSERVER = thread_main.h gestione_utenti.h hash.h common.h lista.h thread_worker.h
 DEPSSERVER = $(patsubst %,$(IDIRSERVER)/%,$(_DEPSSERVER))
 
-_DEPSCLIENT = main_client.h
+_DEPSCLIENT = main_client.h thread_listener.h
 DEPSCLIENT = $(patsubst %,$(IDIRCLIENT)/%,$(_DEPSCLIENT))
 
 # Lista dei file che verranno prodotti nella directory dei file compilati da
@@ -29,7 +29,7 @@ DEPSCLIENT = $(patsubst %,$(IDIRCLIENT)/%,$(_DEPSCLIENT))
 _OBJSERVER = main_server.o thread_main.o gestione_utenti.o hash.o lista.o thread_worker.o
 OBJSERVER = $(patsubst %,$(ODIRSERVER)/%,$(_OBJSERVER))
 
-_OBJCLIENT = main_client.o
+_OBJCLIENT = main_client.o thread_listener.o
 OBJCLIENT = $(patsubst %,$(ODIRCLIENT)/%,$(_OBJCLIENT))
 
 # Specifichiamo che clean, install e chat sono comandi e non file
