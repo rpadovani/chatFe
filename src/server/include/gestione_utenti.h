@@ -17,6 +17,14 @@
 void carica_utenti(void);
 
 /*
+    La funzione cerca di registrare l'utente passato come argomento, usando
+    lo stesso formato dei dati con cui è arrivato al server.
+    Se l'utente è già registrato o per qualche motivo la registrazione fallisce
+    ritorna un errore.
+ */
+char registrazione_utente(char *messaggio);
+
+/*
     La funzione cerca l'username passato come argomento nell'hash table.
     Se l'username è presente e l'utente non è loggato esegue il login, altimenti
     restituisce un errore

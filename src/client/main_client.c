@@ -22,7 +22,7 @@
     La define SERVER_PORT definisce la porta su cui ci aspettiamo che il server
     sia in ascolto
  */
-#define SERVER_PORT 8887
+#define SERVER_PORT 8888
 
 #define MSG_LOGIN 'L'
 #define MSG_REGLOG 'R'
@@ -33,7 +33,7 @@
 #define MSG_LIST 'I'
 #define MSG_LOGOUT 'X'
 
-int main(int argc, char const *argv[])
+int main(int argc, char *argv[])
 {
     /*
         La variabile rappresenta il riferimento alla socket che verrà aperta
@@ -56,6 +56,7 @@ int main(int argc, char const *argv[])
 
     char *username;
     char *messaggio_registrazione;
+    char *messaggio_invio = malloc(sizeof(char));
 
     /*
         Per inviare il buffer dobbiamo saperne la dimensione.
@@ -70,7 +71,7 @@ int main(int argc, char const *argv[])
         Se l'utente ha inserito come primo argomento -h, stampiamo il manuale
         e usciamo
      */
-    if (strcmp(argv[1], "-h") == 0) {
+    if (argv[1] != NULL && strcmp(argv[1], "-h") == 0) {
         printf("## Manuale utente ##\n");
         printf("Questo è un client testuale per una chat\n");
         printf("Sintassi del comando:\n");
@@ -78,6 +79,17 @@ int main(int argc, char const *argv[])
         printf("-h invoca questo manuale\n");
         printf("-r indica la registrazione, seguita da nome, cognome, mail\n");
         return 0;
+    }
+
+    /*
+        A questo punto, o viene passato solo un argomento oltre l'eseguibile
+        oppure c'è stata la registrazione, oppure gli argomenti sono sbagliati
+     */
+    if (!(argc == 2 || (argc == 4 && argv[1] != NULL && strcmp(argv[1], "-r") == 0))) {
+        printf("Comando invocato in maniera sbagliata.\n");
+        printf("Consultare -h per ulteriori informazioni.\n");
+
+        return -1;
     }
 
     // Creiamo una socket
@@ -109,14 +121,51 @@ int main(int argc, char const *argv[])
         direttamente il login.
         In ogni caso prendiamo l'username e facciamo il login
      */
-    username = malloc(sizeof(argc == 4 ? argv[3] : argv[1]));
-    strcpy(username, argc == 4 ? argv[3] : argv[1]);
+    char *argument = (argc == 4 ? argv[3] : argv[1]);
+    username = malloc(strlen(argument) + 1);
+    strcpy(username, argument);
 
     /*
         Se l'utente ha inserito come primo argomento -r, iniziamo la procedura
         di registrazione, a cui poi seguirà il login
     */
-    if (argc == 4 && strcmp(argv[1], "-r")) {
+    if (argc == 4 && strcmp(argv[1], "-r") == 0) {
+        messaggio_registrazione = malloc(strlen(argv[2]) + 1);
+        strcpy(messaggio_registrazione, argv[2]);
+
+        /*
+            Il messaggio di registrazione passato dall'utente è nel formato
+            Nome Cognome mail
+
+            Noi dobbiamo passarlo al server nel formato
+            username:Nome Cognome:mail
+
+            Per quanto riguarda l'username l'abbiamo già recuperato e lo
+            concatenaiamo in un secondo momento.
+
+            Dobbiamo quindi sostituire l'ultima occorrenza dello spazio con un
+            :
+
+            Non sappiamo a priori quanti spazi ci sono, perché un nome potrebbe
+            contenere uno spazio (Maria Antonietta) o nessuno se l'utente
+            non desidera fornire il cognome.
+
+            Quindi usando le caratteristiche dei puntatori inizieremo a scorrere
+            la stringa all'indietro, finché non troviamo il primo spazio,
+            che sostituiamo con un :
+         */
+        char *char_da_modificare =
+                    &messaggio_registrazione[strlen(messaggio_registrazione)];
+
+        while (char_da_modificare > messaggio_registrazione &&
+                *char_da_modificare != ' ') {
+            char_da_modificare--;
+        }
+
+        if (*char_da_modificare == ' ') {
+            *char_da_modificare = ':';
+        }
+
         /*
             Mesaggio di login, la struttura del messaggio da inviare
             al server è la seguente:
@@ -127,26 +176,53 @@ int main(int argc, char const *argv[])
             - n byte di messaggio, in base alla lunghezza dello
                 stesso
          */
-        dimensione_buffer = 1 + 4 + 4 + strlen(username);
+        dimensione_buffer = 1 + 4 + 4 + strlen(messaggio_registrazione)
+                                                        + strlen(username) + 1;
+        messaggio_invio =
+                malloc(strlen(messaggio_registrazione) + strlen(username) + 1);
+        memcpy(messaggio_invio, username, strlen(username));
+        memcpy(messaggio_invio + strlen(username), ":", 1);
+        memcpy(
+            messaggio_invio + strlen(username) + 1,
+            messaggio_registrazione,
+            strlen(messaggio_registrazione)
+        );
 
         /*
             sprintf inserisce automaticamente un terminatore di
             stringa quindi lasciamo lo spazio anche per quello
          */
-        buffer = realloc(buffer, dimensione_buffer + 1);
-        sprintf(buffer, "%c0000%04zu%s", MSG_LOGIN, strlen(username), username);
+        buffer = realloc(buffer, dimensione_buffer);
+        sprintf(
+            buffer,
+            "%c0000%04zu%s",
+            MSG_REGLOG,
+            strlen(messaggio_registrazione) + strlen(username) + 1,
+            messaggio_invio
+        );
 
-    }
+        /*
+            Inviamo il messaggio SENZA il terminatore di stringa
+            perché grazie alla dimensione del campo il server
+            sa esattamente quanti byte leggere
+         */
+        if (write(socket_id, buffer, dimensione_buffer) == -1) {
+            printf("Impossible contattare il server");
+            return -1;
+        }
 
-    /*
-        A questo punto, o viene passato solo un argomento oltre l'eseguibile
-        oppure c'è stata la registrazione, oppure gli argomenti sono sbagliati
-     */
-    if (argc != 2 || (argc == 4 && strcmp(argv[1], "-r"))) {
-        printf("Comando invocato in maniera sbagliata.\n");
-        printf("Consultare -h per ulteriori informazioni\n");
+        buffer = realloc(buffer, sizeof(char));
+        if (read(socket_id, buffer, sizeof(char)) < 0) {
+            printf("Errore leggendo la risposta del server");
+            return -1;
+        }
 
-        return -1;
+        if (buffer[0] != MSG_OK) {
+            printf("Impossibile registrare l'utente.");
+            return -1;
+        }
+
+        printf("Registrazione effettuata con successo, procedo con il login\n");
     }
 
     /*

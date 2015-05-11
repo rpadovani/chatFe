@@ -106,6 +106,7 @@ void carica_utenti(void)
     */
 }
 
+// gestione_utenti.h
 char login_utente(char *username, int socket_id)
 {
     hdata_t *risultato_ricerca = NULL;
@@ -113,6 +114,38 @@ char login_utente(char *username, int socket_id)
 
     if (risultato_ricerca != NULL && risultato_ricerca->sockid == -1) {
         risultato_ricerca->sockid = socket_id;
+        return MSG_OK;
+    }
+
+    // TODO error management
+    return MSG_ERROR;
+}
+
+// gestione_utenti.h
+char registrazione_utente(char *messaggio)
+{
+    char *username;
+    char *nome;
+    char *mail;
+    hdata_t *utente;
+
+    // Il messaggio è nel formato username:nome:mail
+    username = strdup(strtok(messaggio, ":"));
+
+    // Lo username non deve essere registrato
+    if (CERCAHASH(username, HASH_TABLE) == NULL) {
+        nome = strdup(strtok(NULL, ":"));
+        mail = strdup(strtok(NULL, ":"));
+
+        utente = (hdata_t *) malloc(sizeof(hdata_t));
+        utente->uname = username;
+        utente->fullname = nome;
+        utente->email = mail;
+        // Il login sarà effettuato in un secondo momento
+        utente->sockid = -1;
+
+        // Inseriamo la struttura appena popolata.
+        INSERISCIHASH(utente->uname, (void*) utente, HASH_TABLE);
         return MSG_OK;
     }
 
