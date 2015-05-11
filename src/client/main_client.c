@@ -224,66 +224,67 @@ int main(int argc, char *argv[])
             return -1;
         }
 
-        printf("Registrazione effettuata con successo, procedo con il login\n");
+        printf("Registrazione e login effettuati con successo.\n");
+    } else {
+        /*
+            Mesaggio di login, la struttura del messaggio da inviare
+            al server è la seguente:
+            - 1 byte che rappresenta il tipo di connessione
+            - 4 byte (1 int) che rappresentano la dimensione del
+                campo destinatario (in questo caso 0)
+            - 4 byte (1 int) che rappresenta la lunghezza del nome
+                utente con cui fare il login
+            - n byte di nome utente, in base alla lunghezza dello
+                stesso
+         */
+        dimensione_buffer = 1 + 4 + 4 + strlen(username);
+
+        /*
+            sprintf inserisce automaticamente un terminatore di
+            stringa quindi lasciamo lo spazio anche per quello
+         */
+        buffer = realloc(buffer, dimensione_buffer + 1);
+        sprintf(buffer, "%c0000%04zu%s", MSG_LOGIN, strlen(username), username);
+
+        /*
+            Inviamo il messaggio SENZA il terminatore di stringa
+            perché grazie alla dimensione del campo il server
+            sa esattamente quanti byte leggere
+         */
+        if (write(socket_id, buffer, dimensione_buffer) == -1) {
+            printf("Impossibile effettuare il login");
+            return -1;
+        }
+
+        /*
+            A questo punto il messaggio è stato inviato. Attendiamo un
+            messaggio di risposta dal server per vedere se il nome utente è
+            valido ed eventualmente creare i thread che si occupano di leggere
+            e scrivere.
+            Il reply è di 1 char: nel caso ci sia stato un errore allocheremo
+            altro spazio per leggere il messaggio d'errore
+        */
+        buffer = realloc(buffer, sizeof(char));
+        if (read(socket_id, buffer, sizeof(char)) < 0) {
+            printf("Errore leggendo la risposta del server");
+            return -1;
+        }
+
+        if (buffer[0] != MSG_OK) {
+            // Leggiamo quanto è lungo l'errore
+            //buffer = realloc(buffer, sizeof(int));
+            //read(socket_id, buffer, sizeof(int));
+
+            // Allochiamo lo spazio per il messaggio
+            //buffer = realloc(buffer, atoi(buffer));
+            //read(socket_id, buffer, sizeof(int));
+
+            printf("Impossibile effettuare il login:");
+            return -1;
+        }
+
+        printf("Login effettuato con successo\n");
     }
-
-    /*
-        Mesaggio di login, la struttura del messaggio da inviare
-        al server è la seguente:
-        - 1 byte che rappresenta il tipo di connessione
-        - 4 byte (1 int) che rappresentano la dimensione del
-            campo destinatario (in questo caso 0)
-        - 4 byte (1 int) che rappresenta la lunghezza del nome
-            utente con cui fare il login
-        - n byte di nome utente, in base alla lunghezza dello
-            stesso
-     */
-    dimensione_buffer = 1 + 4 + 4 + strlen(username);
-
-    /*
-        sprintf inserisce automaticamente un terminatore di
-        stringa quindi lasciamo lo spazio anche per quello
-     */
-    buffer = realloc(buffer, dimensione_buffer + 1);
-    sprintf(buffer, "%c0000%04zu%s", MSG_LOGIN, strlen(username), username);
-
-    /*
-        Inviamo il messaggio SENZA il terminatore di stringa
-        perché grazie alla dimensione del campo il server
-        sa esattamente quanti byte leggere
-     */
-    if (write(socket_id, buffer, dimensione_buffer) == -1) {
-        printf("Impossibile effettuare il login");
-        return -1;
-    }
-
-    /*
-        A questo punto il messaggio è stato inviato. Attendiamo un messaggio di
-        risposta dal server per vedere se il nome utente è valido ed
-        eventualmente creare i thread che si occupano di leggere e scrivere.
-        Il reply è di 1 char: nel caso ci sia stato un errore allocheremo
-        altro spazio per leggere il messaggio d'errore
-    */
-    buffer = realloc(buffer, sizeof(char));
-    if (read(socket_id, buffer, sizeof(char)) < 0) {
-        printf("Errore leggendo la risposta del server");
-        return -1;
-    }
-
-    if (buffer[0] != MSG_OK) {
-        // Leggiamo quanto è lungo l'errore
-        //buffer = realloc(buffer, sizeof(int));
-        //read(socket_id, buffer, sizeof(int));
-
-        // Allochiamo lo spazio per il messaggio
-        //buffer = realloc(buffer, atoi(buffer));
-        //read(socket_id, buffer, sizeof(int));
-
-        printf("Impossibile effettuare il login:");
-        return -1;
-    }
-
-    printf("Login effettuato con successo\n");
 
     /*
         Arrivati a questo puto il login è avvenuto con successo. Dobbiamo quindi

@@ -122,7 +122,7 @@ char login_utente(char *username, int socket_id)
 }
 
 // gestione_utenti.h
-char registrazione_utente(char *messaggio)
+char registrazione_utente(char *messaggio, int socket_id)
 {
     char *username;
     char *nome;
@@ -142,8 +142,7 @@ char registrazione_utente(char *messaggio)
         utente->fullname = nome;
         utente->email = mail;
         // Il login sarà effettuato in un secondo momento
-        utente->sockid = -1;
-
+        utente->sockid = socket_id;
         // Inseriamo la struttura appena popolata.
         INSERISCIHASH(utente->uname, (void*) utente, HASH_TABLE);
         return MSG_OK;

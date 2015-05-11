@@ -19,10 +19,12 @@ void carica_utenti(void);
 /*
     La funzione cerca di registrare l'utente passato come argomento, usando
     lo stesso formato dei dati con cui è arrivato al server.
+    Dopodiché segna l'utente come loggato usando la socket_id passata come
+    argomento.
     Se l'utente è già registrato o per qualche motivo la registrazione fallisce
     ritorna un errore.
  */
-char registrazione_utente(char *messaggio);
+char registrazione_utente(char *messaggio, int socket_id);
 
 /*
     La funzione cerca l'username passato come argomento nell'hash table.

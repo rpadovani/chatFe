@@ -133,7 +133,7 @@ void *thread_worker(void *connessione)
 
         if (messaggio->type == 'R') {
             // gestore_utenti.h
-            risposta = registrazione_utente(messaggio->msg);
+            risposta = registrazione_utente(messaggio->msg, socket_id);
         } else if (messaggio->type == 'L') {
             // gestore_utenti.h
             risposta = login_utente(messaggio->msg, socket_id);
