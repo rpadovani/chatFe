@@ -133,21 +133,22 @@ char registrazione_utente(char *messaggio, int socket_id)
     username = strdup(strtok(messaggio, ":"));
 
     // Lo username non deve essere registrato
-    if (CERCAHASH(username, HASH_TABLE) == NULL) {
-        nome = strdup(strtok(NULL, ":"));
-        mail = strdup(strtok(NULL, ":"));
-
-        utente = (hdata_t *) malloc(sizeof(hdata_t));
-        utente->uname = username;
-        utente->fullname = nome;
-        utente->email = mail;
-        // Il login sarà effettuato in un secondo momento
-        utente->sockid = socket_id;
-        // Inseriamo la struttura appena popolata.
-        INSERISCIHASH(utente->uname, (void*) utente, HASH_TABLE);
-        return MSG_OK;
+    if (CERCAHASH(username, HASH_TABLE) != NULL) {
+      // TODO error management
+      
+        return MSG_ERROR;
     }
 
-    // TODO error management
-    return MSG_ERROR;
+    nome = strdup(strtok(NULL, ":"));
+    mail = strdup(strtok(NULL, ":"));
+
+    utente = (hdata_t *) malloc(sizeof(hdata_t));
+    utente->uname = username;
+    utente->fullname = nome;
+    utente->email = mail;
+    // Il login sarà effettuato in un secondo momento
+    utente->sockid = socket_id;
+    // Inseriamo la struttura appena popolata.
+    INSERISCIHASH(utente->uname, (void*) utente, HASH_TABLE);
+    return MSG_OK;
 }

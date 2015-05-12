@@ -8,6 +8,7 @@
 
 #include <main_client.h>
 #include <thread_listener.h>
+#include <thread_writer.h>
 
 /*
     La define PROTOCOLLO indica con quale protocollo creare la socket.
@@ -292,7 +293,7 @@ int main(int argc, char *argv[])
         dei messaggi
      */
     pthread_t thread_listener_id;
-    //pthread_t thread_writer_id;
+    pthread_t thread_writer_id;
 
     if (pthread_create(
             &thread_listener_id,
@@ -300,11 +301,24 @@ int main(int argc, char *argv[])
             &thread_listener,
             (void *) &socket_id
         ) != 0) {
+          // TODO gestione errori
         printf("Impossible creare il thread listener");
         return -1;
     }
 
+    if (pthread_create(
+            &thread_writer_id,
+            NULL,
+            &thread_writer,
+            (void *) &socket_id
+        ) != 0) {
+          // TODO gestione errori
+        printf("Impossible creare il thread writer");
+        return -1;
+    }
+
     pthread_join(thread_listener_id, NULL);
+    pthread_join(thread_writer_id, NULL);
 
     close(socket_id);
     return 0;

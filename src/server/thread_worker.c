@@ -137,6 +137,12 @@ void *thread_worker(void *connessione)
         } else if (messaggio->type == 'L') {
             // gestore_utenti.h
             risposta = login_utente(messaggio->msg, socket_id);
+        } else {
+            printf("%c\n", messaggio->type);
+            if (messaggio->type != 'B')
+              printf("%s\n", messaggio->receiver);
+            printf("%s\n", messaggio->msg);
+            risposta = MSG_OK;
         }
 
         // Qualunque sia stata la risposta, la inviamo al client
