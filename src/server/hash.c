@@ -63,6 +63,25 @@ void * CERCAHASH(char * key, hash_t H) {
   return CERCALISTA(key, H[i]);
 }
 
+hdata_t * CERCAUTENTECONNESSO(lista L) {
+    int found;
+    posizione p;
+    hdata_t * r;
+    int k;
+    r = NULL;
+    p = PRIMOLISTA(L);
+    found = 0;
+
+    while ( (!found) && (!FINELISTA(p,L)) ) {
+      k = ((hdata_t *)(p->elemento))->sockid;
+      if ( k != -1 ) {
+        r = p->elemento;
+      }
+      p = SUCCLISTA(p);
+    }
+    return r;
+}
+
 //////////////////////////////////////////////////////////////////////
 // inserisce l'elemento hdata_t * nella tabella hash H
 

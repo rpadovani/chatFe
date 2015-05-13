@@ -5,6 +5,7 @@
 #include <thread_main.h>
 #include <gestione_utenti.h>
 #include <main_server.h>
+#include <lista.h>
 
 /*
     Per la descrizione generale delle funzioni presenti in questo file
@@ -135,7 +136,7 @@ char registrazione_utente(char *messaggio, int socket_id)
     // Lo username non deve essere registrato
     if (CERCAHASH(username, HASH_TABLE) != NULL) {
       // TODO error management
-      
+
         return MSG_ERROR;
     }
 
@@ -151,4 +152,15 @@ char registrazione_utente(char *messaggio, int socket_id)
     // Inseriamo la struttura appena popolata.
     INSERISCIHASH(utente->uname, (void*) utente, HASH_TABLE);
     return MSG_OK;
+}
+
+void elenca_utenti(void)
+{
+  hdata_t *risultato_ricerca = NULL;
+  int i = 0;
+  for (i=0; i<997; i++) {
+      if ((risultato_ricerca = CERCAUTENTECONNESSO(HASH_TABLE[i])) != NULL) {
+          printf("%s\n", risultato_ricerca->uname);
+      }
+  }
 }

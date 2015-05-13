@@ -32,4 +32,6 @@ char registrazione_utente(char *messaggio, int socket_id);
     restituisce un errore
  */
 char login_utente(char *username, int socket_id);
+
+void elenca_utenti(void);
 #endif

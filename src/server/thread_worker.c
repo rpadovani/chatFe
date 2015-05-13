@@ -14,6 +14,10 @@ int go;
 
 #define MSG_OK 'O'
 #define MSG_ERROR 'E'
+#define MSG_SINGLE 'S'
+#define MSG_BRDCAST 'B'
+#define MSG_LIST 'I'
+#define MSG_LOGOUT 'X'
 
 // thread_worker.h
 void *thread_worker(void *connessione)
@@ -137,6 +141,9 @@ void *thread_worker(void *connessione)
         } else if (messaggio->type == 'L') {
             // gestore_utenti.h
             risposta = login_utente(messaggio->msg, socket_id);
+        } else if (messaggio->type == MSG_LIST) {
+            // gestore_utenti.h
+            elenca_utenti();
         } else {
             printf("%c\n", messaggio->type);
             if (messaggio->type != 'B')
