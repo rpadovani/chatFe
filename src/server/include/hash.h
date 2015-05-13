@@ -32,8 +32,6 @@ hash_t CREAHASH () ;
 // restituisce un "hdata_t *" oppure NULL se non esiste
 
 void * CERCAHASH(char * key, hash_t H);
-
-hdata_t * CERCAUTENTECONNESSO(lista L);
 //////////////////////////////////////////////////////////////////////
 // inserisce l'elemento hdata_t * nella tabella hash H
 

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdbool.h>
 
 #include <thread_main.h>
 #include <gestione_utenti.h>
@@ -19,6 +20,12 @@ char *file_utenti;
 // gestione_utenti.h
 static hash_t HASH_TABLE;
 
+/*
+    Per gestire gli utenti connessi utilizziamo una lista che contiene gli
+    username, creata e mantenuta con le funzioni indicate in lista.h
+ */
+static lista utenti_connessi;
+
 #define MSG_OK 'O'
 #define MSG_ERROR 'E'
 
@@ -27,6 +34,7 @@ void carica_utenti(void)
 {
     hdata_t *utente;
 
+    utenti_connessi = CREALISTA();
     HASH_TABLE = CREAHASH();
     /*
         Controlliamo se il file esiste con la funzione access(). È disponibile
@@ -112,8 +120,10 @@ char login_utente(char *username, int socket_id)
 {
     hdata_t *risultato_ricerca = NULL;
     risultato_ricerca = CERCAHASH(username, HASH_TABLE);
+    posizione ultimo_elemento = ULTIMOLISTA(utenti_connessi);
 
     if (risultato_ricerca != NULL && risultato_ricerca->sockid == -1) {
+        INSLISTA(username, &ultimo_elemento);
         risultato_ricerca->sockid = socket_id;
         return MSG_OK;
     }
@@ -154,13 +164,35 @@ char registrazione_utente(char *messaggio, int socket_id)
     return MSG_OK;
 }
 
-void elenca_utenti(void)
+// gestione_utenti.h
+void elenca_utenti_connessi(char *risposta)
 {
-  hdata_t *risultato_ricerca = NULL;
-  int i = 0;
-  for (i=0; i<997; i++) {
-      if ((risultato_ricerca = CERCAUTENTECONNESSO(HASH_TABLE[i])) != NULL) {
-          printf("%s\n", risultato_ricerca->uname);
+    posizione elemento_lista = PRIMOLISTA(utenti_connessi);
+
+    // La variabile risposta deve aver già allocato un char
+    risposta[0] = '\0';
+
+    // Il primo nome utente non ha il separatore all'inizio
+    bool is_first = true;
+
+    while (PREDLISTA(elemento_lista) != ULTIMOLISTA(utenti_connessi)) {
+      /*
+          L'array della risposta deve avere abbastanza spazio prima di
+          poter concatenare il nuovo nome utente.
+          Lo riallochiamo quindi aumentandogli la dimensione pari al nome
+          utente che dobbiamo inserire + 1 per il separatore
+       */
+      if (is_first) {
+          is_first = false;
+          risposta = realloc(risposta,
+              strlen(risposta) + strlen(elemento_lista->elemento));
+          risposta = strcat(risposta, elemento_lista->elemento);
+      } else {
+          risposta = realloc(risposta,
+              strlen(risposta) + strlen(elemento_lista->elemento) + 1);
+          risposta = strcat(strcat(risposta, ":"),
+              elemento_lista->elemento);
       }
-  }
+      elemento_lista = SUCCLISTA(elemento_lista);
+    }
 }

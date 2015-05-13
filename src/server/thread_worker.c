@@ -51,10 +51,10 @@ void *thread_worker(void *connessione)
 
     /*
         Array di char che conterrà la risposta da inviare al client, contenente
-        eventuali messaggi di errore se l'operazione è fallita, oppure un ack
-        in caso di successo
+        eventuali messaggi di errore se l'operazione è fallita, oppure la
+        risposta in caso di successo
      */
-    char risposta;
+    char *risposta = malloc(sizeof(char));
 
     // Riferimento alla socket passato per argometno
     int socket_id = *(int*)connessione;
@@ -137,23 +137,33 @@ void *thread_worker(void *connessione)
 
         if (messaggio->type == 'R') {
             // gestore_utenti.h
-            risposta = registrazione_utente(messaggio->msg, socket_id);
+            risposta[0] = registrazione_utente(messaggio->msg, socket_id);
         } else if (messaggio->type == 'L') {
             // gestore_utenti.h
-            risposta = login_utente(messaggio->msg, socket_id);
+            risposta[0] = login_utente(messaggio->msg, socket_id);
         } else if (messaggio->type == MSG_LIST) {
             // gestore_utenti.h
-            elenca_utenti();
+            elenca_utenti_connessi(risposta);
+            printf("%s\n", risposta);
+
+            /*
+                Prepariamo la risposta con questa struttura:
+                - 1 byte di tipo di messaggio
+                - 4 byte di int che indica la lunghezza del sender
+                      (0 in questo caso)
+                - 4 byte di int che indica la lunghezza della risposta
+                - n byte di risposta
+             */
         } else {
             printf("%c\n", messaggio->type);
             if (messaggio->type != 'B')
               printf("%s\n", messaggio->receiver);
             printf("%s\n", messaggio->msg);
-            risposta = MSG_OK;
+            risposta[0] = MSG_OK;
         }
 
         // Qualunque sia stata la risposta, la inviamo al client
-        write(socket_id, &risposta, 1);
+        write(socket_id, risposta, 1);
     } // end while
 
     // Prima di uscire chiudiamo la socket

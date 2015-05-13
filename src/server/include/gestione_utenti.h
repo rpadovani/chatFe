@@ -33,5 +33,12 @@ char registrazione_utente(char *messaggio, int socket_id);
  */
 char login_utente(char *username, int socket_id);
 
-void elenca_utenti(void);
+/*
+    La funzione modifica la stringa passata come argomento con l'elenco di
+    tutti gli utenti connessi, cioè di tutti gli utenti che nella hash table
+    hanno un socket id diverso da -1.
+
+    Il separatore tra i vari nomi utenti sarà :
+ */
+void elenca_utenti_connessi(char *risposta);
 #endif
