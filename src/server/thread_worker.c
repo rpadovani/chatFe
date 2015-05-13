@@ -45,7 +45,8 @@ void *thread_worker(void *connessione)
         Il buffer attraverso cui passiamo i messaggi. La prima cosa che leggo
         è il tipo di messaggio, che ha sempre dimensione di un char.
         Dopodiché cambieremo dinamicamente la dimensione del buffer in base
-        alle necessità
+        alle necessità.
+        Serve sia per ricevere che per inviare.
      */
     char *buffer = malloc(sizeof(char));
 
@@ -61,7 +62,10 @@ void *thread_worker(void *connessione)
 
     /*
         Salveremo man mano qua la lunghezza della successiva stringa da leggere
-        dal buffer, in modo da allocare la dimensione della stringa apposita
+        dal buffer, in modo da allocare la dimensione della stringa apposita.
+
+        Nel momento dell'invio poi lo useremo per inserire la lunghezza del
+        buffer da inviare
      */
     int lunghezza_stringa;
 
@@ -137,15 +141,17 @@ void *thread_worker(void *connessione)
 
         if (messaggio->type == 'R') {
             // gestore_utenti.h
-            risposta[0] = registrazione_utente(messaggio->msg, socket_id);
+            buffer[0] = registrazione_utente(messaggio->msg, socket_id);
+            lunghezza_stringa = 2;
+            buffer[1] = '\0';
         } else if (messaggio->type == 'L') {
             // gestore_utenti.h
-            risposta[0] = login_utente(messaggio->msg, socket_id);
+            buffer[0] = login_utente(messaggio->msg, socket_id);
+            buffer[1] = '\0';
+            lunghezza_stringa = 2;
         } else if (messaggio->type == MSG_LIST) {
             // gestore_utenti.h
             elenca_utenti_connessi(risposta);
-            printf("%s\n", risposta);
-
             /*
                 Prepariamo la risposta con questa struttura:
                 - 1 byte di tipo di messaggio
@@ -153,17 +159,37 @@ void *thread_worker(void *connessione)
                       (0 in questo caso)
                 - 4 byte di int che indica la lunghezza della risposta
                 - n byte di risposta
+                - 1 byte di terminatore di stringa (che poi non sarà inviato)
              */
+            lunghezza_stringa = 1 + 4 + 4 + strlen(risposta) + 1;
+            buffer = realloc(buffer, lunghezza_stringa);
+            sprintf(
+                buffer,
+                "%c0000%04zu%s",
+                MSG_LIST,
+                strlen(risposta),
+                risposta
+            );
+            printf("%s\n", buffer);
         } else {
             printf("%c\n", messaggio->type);
             if (messaggio->type != 'B')
               printf("%s\n", messaggio->receiver);
             printf("%s\n", messaggio->msg);
-            risposta[0] = MSG_OK;
+            buffer[0] = MSG_OK;
+            buffer[1] = '\0';
+            lunghezza_stringa = 2;
         }
 
-        // Qualunque sia stata la risposta, la inviamo al client
-        write(socket_id, risposta, 1);
+        /*
+            Qualunque sia stata la risposta, la inviamo al client, senza il
+            terminatore di stringa perché sapendo esattamente la dimensione
+            della stringa il client non ha bisogno del terminatore
+         */
+        write(socket_id, buffer, lunghezza_stringa - 1);
+
+        // Resettiamo il buffer in modo da evitare errori alla prossima lettura
+        bzero(buffer, lunghezza_stringa);
     } // end while
 
     // Prima di uscire chiudiamo la socket
