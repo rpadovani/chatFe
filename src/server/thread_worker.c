@@ -60,6 +60,9 @@ void *thread_worker(void *connessione)
     // Riferimento alla socket passato per argometno
     int socket_id = *(int*)connessione;
 
+    // Il nome dell'utente che sta utilizzando questo worker
+    char *username;
+
     /*
         Salveremo man mano qua la lunghezza della successiva stringa da leggere
         dal buffer, in modo da allocare la dimensione della stringa apposita.
@@ -141,11 +144,13 @@ void *thread_worker(void *connessione)
 
         if (messaggio->type == 'R') {
             // gestore_utenti.h
-            buffer[0] = registrazione_utente(messaggio->msg, socket_id);
+            buffer[0] = registrazione_utente(messaggio->msg, socket_id, username);
             lunghezza_stringa = 2;
             buffer[1] = '\0';
         } else if (messaggio->type == 'L') {
             // gestore_utenti.h
+            username = malloc(sizeof(strlen(messaggio->msg)) + 1);
+            strcpy(username, messaggio->msg);
             buffer[0] = login_utente(messaggio->msg, socket_id);
             buffer[1] = '\0';
             lunghezza_stringa = 2;
@@ -170,6 +175,11 @@ void *thread_worker(void *connessione)
                 strlen(risposta),
                 risposta
             );
+        } else if (messaggio->type == MSG_LOGOUT) {
+          // gestione_utenti.h
+          logout_utente(username);
+          // Usciamo dal ciclo
+          break;
         } else {
             printf("%c\n", messaggio->type);
             if (messaggio->type != 'B')

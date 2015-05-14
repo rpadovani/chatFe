@@ -127,6 +127,10 @@ void *thread_writer(void *connessione) {
             printf("Impossibile inviare il messaggio\n");
             continue;
         }
+
+        if (messaggio->type == MSG_LOGOUT) {
+          break;
+        }
     }
 
     free(linea);

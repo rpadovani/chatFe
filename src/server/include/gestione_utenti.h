@@ -23,8 +23,10 @@ void carica_utenti(void);
     argomento.
     Se l'utente è già registrato o per qualche motivo la registrazione fallisce
     ritorna un errore.
+
+    Nel parametro username inserisce il nuovo username estraendolo dal messaggio
  */
-char registrazione_utente(char *messaggio, int socket_id);
+char registrazione_utente(char *messaggio, int socket_id, char *username);
 
 /*
     La funzione cerca l'username passato come argomento nell'hash table.
@@ -41,4 +43,10 @@ char login_utente(char *username, int socket_id);
     Il separatore tra i vari nomi utenti sarà :
  */
 void elenca_utenti_connessi(char *risposta);
+
+/*
+    La funzione setta il socket_id dell'utente nella HASH_TABLE a -1 e elimina
+    l'utente dalla lista degli utenti connessi
+ */
+void logout_utente(char *username);
 #endif

@@ -133,9 +133,8 @@ char login_utente(char *username, int socket_id)
 }
 
 // gestione_utenti.h
-char registrazione_utente(char *messaggio, int socket_id)
+char registrazione_utente(char *messaggio, int socket_id, char *username)
 {
-    char *username;
     char *nome;
     char *mail;
     hdata_t *utente;
@@ -194,5 +193,27 @@ void elenca_utenti_connessi(char *risposta)
               elemento_lista->elemento);
       }
       elemento_lista = SUCCLISTA(elemento_lista);
+    }
+}
+
+// gestione_utenti.h
+void logout_utente(char *username)
+{
+    hdata_t *risultato_ricerca = NULL;
+    posizione elemento_lista = PRIMOLISTA(utenti_connessi);
+
+    // Lo username deve essere nella hast table
+    if ((risultato_ricerca = CERCAHASH(username, HASH_TABLE)) == NULL) {
+      // TODO error management
+    }
+
+    risultato_ricerca->sockid = -1;
+
+    while (PREDLISTA(elemento_lista) != ULTIMOLISTA(utenti_connessi)) {
+        if (strcmp(elemento_lista->elemento, username) == 0) {
+          CANCLISTA(&elemento_lista);
+          break;
+        }
+        elemento_lista = SUCCLISTA(elemento_lista);
     }
 }
