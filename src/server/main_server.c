@@ -7,7 +7,7 @@
 #include <main_server.h>
 
 // main_server.h
-int go;
+sig_atomic_t go;
 char *file_log;
 char *file_utenti;
 
@@ -26,6 +26,16 @@ int main(int argc, char *argv[])
         La variabile memorizza un riferimento al thread principale
      */
     pthread_t main_thread;
+
+    /*
+        Il gestore dei segnali deve occuparsi anche di resettare SA_RESTART
+        quindi lo invochiamo con sigaction.
+        Questa struct è necessaria per definire come chiamare sigaction
+        signal_handler è la funzione che si occupa di gestire i Segnali,
+        così come definita in main_server.h
+     */
+    struct sigaction setup_action;
+    setup_action.sa_handler = signal_handler;
 
     /*
         argc deve essere uguale a 3, il primo parametro è il nome del comando,
@@ -76,11 +86,11 @@ int main(int argc, char *argv[])
         }
 
         // Attendiamo il segnale di kill
-        if (signal(SIGINT,  signal_handler) == SIG_ERR) {
+        if (sigaction(SIGINT,  &setup_action, 0) < 0) {
             fprintf(stderr, "Il segnale non è stato interpretato\n");
         }
 
-        if (signal(SIGKILL,  signal_handler) == SIG_ERR) {
+        if (sigaction(SIGTERM, &setup_action, 0) < 0) {
             fprintf(stderr, "Il segnale non è stato interpretato\n");
         }
 
@@ -97,11 +107,13 @@ int main(int argc, char *argv[])
     return 0;
 }
 
+// main_server.h
 void signal_handler(int signal_number)
 {
     switch(signal_number) {
       case SIGTERM:
       case SIGINT:
+        // Se il segnale è uno di quelli che ci interessa settiamo go a zero
         go = 0;
         break;
     }

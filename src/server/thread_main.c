@@ -119,7 +119,12 @@ void *thread_main(void *arg)
                 (socklen_t*)&connessione
             );
 
-            if (nuova_socket < 0) {
+            /*
+                Se go è zero accept() ritorna -1 (vedi main_server.h)
+                quindi è il comportamento giusto, e non ritorniamo nessun
+                error
+             */
+            if (nuova_socket < 0 && go != 0) {
                 //TODO error
                 printf("Fallimento nella creazione della connessione\n");
             } else {
