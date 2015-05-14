@@ -14,4 +14,6 @@ extern int go;
 extern char *file_log;
 extern char *file_utenti;
 
+void signal_handler(int signal_number);
+
 #endif

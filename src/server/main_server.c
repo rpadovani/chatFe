@@ -1,8 +1,10 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <signal.h>
 
 #include <thread_main.h>
+#include <main_server.h>
 
 // main_server.h
 int go;
@@ -73,6 +75,15 @@ int main(int argc, char *argv[])
             return -1;
         }
 
+        // Attendiamo il segnale di kill
+        if (signal(SIGINT,  signal_handler) == SIG_ERR) {
+            fprintf(stderr, "Il segnale non è stato interpretato\n");
+        }
+
+        if (signal(SIGKILL,  signal_handler) == SIG_ERR) {
+            fprintf(stderr, "Il segnale non è stato interpretato\n");
+        }
+
         pthread_join(main_thread, NULL);
     } else if (pid == -1) {
         /*
@@ -84,6 +95,16 @@ int main(int argc, char *argv[])
     }
 
     return 0;
+}
+
+void signal_handler(int signal_number)
+{
+    switch(signal_number) {
+      case SIGTERM:
+      case SIGINT:
+        go = 0;
+        break;
+    }
 }
 /*
 

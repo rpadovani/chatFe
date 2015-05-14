@@ -170,7 +170,6 @@ void *thread_worker(void *connessione)
                 strlen(risposta),
                 risposta
             );
-            printf("%s\n", buffer);
         } else {
             printf("%c\n", messaggio->type);
             if (messaggio->type != 'B')
