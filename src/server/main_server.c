@@ -85,6 +85,8 @@ int main(int argc, char *argv[])
             return -1;
         }
 
+        pthread_join(main_thread, NULL);
+
         // Attendiamo il segnale di kill
         if (sigaction(SIGINT,  &setup_action, 0) < 0) {
             fprintf(stderr, "Il segnale non è stato interpretato\n");
@@ -93,8 +95,6 @@ int main(int argc, char *argv[])
         if (sigaction(SIGTERM, &setup_action, 0) < 0) {
             fprintf(stderr, "Il segnale non è stato interpretato\n");
         }
-
-        pthread_join(main_thread, NULL);
     } else if (pid == -1) {
         /*
             Il pid è -1, la fork è fallita: registriamo l'errore e terminiamo
