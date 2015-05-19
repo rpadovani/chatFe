@@ -19,6 +19,8 @@ int go;
 #define MSG_LIST 'I'
 #define MSG_LOGOUT 'X'
 
+#define K 256
+
 // thread_worker.h
 void *thread_worker(void *connessione)
 {
@@ -74,6 +76,8 @@ void *thread_worker(void *connessione)
 
     // Contatore usato da 0 a 2 per evitare di ripetere il codice
     int i;
+
+    int buffer_corrente = 0;
 
     /*
         Il worker rimane in ascolto fintanto che il server non si ferma o il
@@ -180,6 +184,8 @@ void *thread_worker(void *connessione)
           logout_utente(username);
           // Usciamo dal ciclo
           break;
+        } else if (messaggio->type == 'B'){
+            printf("broadcast \n");
         } else {
             printf("%c\n", messaggio->type);
             if (messaggio->type != 'B')

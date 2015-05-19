@@ -6,6 +6,7 @@
 
 #include <thread_main.h>
 #include <thread_worker.h>
+#include <thread_dispatcher.h>
 #include <gestione_utenti.h>
 #include <main_server.h>
 
@@ -29,8 +30,12 @@
  */
 #define SERVER_PORT 8888
 
+#define K 256
+
 // main_server.h
 int go;
+
+const char *buffer[K];
 
 // thread_main.h
 void *thread_main(void *arg)
@@ -63,6 +68,7 @@ void *thread_main(void *arg)
 
     // La variabile contiene l'id del thread che viene creato per il worker
     pthread_t tid;
+    pthread_t tid_dispatcher;
 
     /*
         Il thread deve essere creato come detached, per farlo bisogna passare
@@ -103,9 +109,16 @@ void *thread_main(void *arg)
         }
 
         /*
-            La socket è stata creata con successo e bindata. Entriamo nel ciclo
-            che continua fintanto che il programma è in esecuzione
+            La socket è stata creata con successo e bindata. Creiamo il thread
+            dispatcher ed entriamo nel ciclo che continua fintanto che il
+            programma è in esecuzione
          */
+        if (pthread_create(&tid_dispatcher, NULL, &thread_dispatcher, NULL)) {
+             // TODO error
+             printf("Fallimento nella creazione del thread dispatcher\n");
+        }
+        pthread_join(tid_dispatcher, NULL);
+
         while (go != 0) {
             // Rimaniamo in ascolto
             listen(socket_id, 3);

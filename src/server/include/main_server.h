@@ -3,6 +3,8 @@
 
 #include <signal.h>
 
+#define K 256
+
 /*
     La variabile globale go controlla il flusso di esecuzione del programma.
     Fintanto che è diversa da zero, le varie operazioni continuano.
@@ -17,6 +19,8 @@ extern sig_atomic_t go;
  */
 extern char *file_log;
 extern char *file_utenti;
+
+extern const char *buffer[K];
 
 /*
     La funzione signal_handler si occupa di gestire i segnali che arrivano
