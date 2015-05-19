@@ -20,8 +20,6 @@ extern sig_atomic_t go;
 extern char *file_log;
 extern char *file_utenti;
 
-extern const char *buffer[K];
-
 /*
     La funzione signal_handler si occupa di gestire i segnali che arrivano
     per stoppare il server.

@@ -217,3 +217,21 @@ void logout_utente(char *username)
         elemento_lista = SUCCLISTA(elemento_lista);
     }
 }
+
+int esiste_utente(char *username)
+{
+    hdata_t *risultato_ricerca = NULL;
+    if ((risultato_ricerca = CERCAHASH(username, HASH_TABLE)) == NULL) {
+        return 1;
+    }
+    return 0;
+}
+
+int sockid_username(char *username)
+{
+  hdata_t *risultato_ricerca = NULL;
+  if ((risultato_ricerca = CERCAHASH(username, HASH_TABLE)) == NULL) {
+      return -1;
+  }
+  return risultato_ricerca->sockid;
+}

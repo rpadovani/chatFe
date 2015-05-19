@@ -49,4 +49,12 @@ void elenca_utenti_connessi(char *risposta);
     l'utente dalla lista degli utenti connessi
  */
 void logout_utente(char *username);
+
+/*
+    La funzione ritorna -1 se l'utente passato come argomento non esiste o 0
+    se esiste
+ */
+int esiste_utente(char *username);
+
+int sockid_username(char *username);
 #endif

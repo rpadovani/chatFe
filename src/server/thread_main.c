@@ -35,8 +35,6 @@
 // main_server.h
 int go;
 
-const char *buffer[K];
-
 // thread_main.h
 void *thread_main(void *arg)
 {
@@ -117,7 +115,6 @@ void *thread_main(void *arg)
              // TODO error
              printf("Fallimento nella creazione del thread dispatcher\n");
         }
-        pthread_join(tid_dispatcher, NULL);
 
         while (go != 0) {
             // Rimaniamo in ascolto
@@ -161,6 +158,8 @@ void *thread_main(void *arg)
                 }
             }
         } // end while
+        pthread_join(tid_dispatcher, NULL);
+
     } else {
         // TODO: implementa errori
         printf("Impossibile creare la socket\n");

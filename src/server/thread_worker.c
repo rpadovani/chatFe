@@ -7,6 +7,7 @@
 #include <sys/socket.h>
 
 #include <thread_worker.h>
+#include <thread_dispatcher.h>
 #include <gestione_utenti.h>
 
 // main_server.h
@@ -18,8 +19,6 @@ int go;
 #define MSG_BRDCAST 'B'
 #define MSG_LIST 'I'
 #define MSG_LOGOUT 'X'
-
-#define K 256
 
 // thread_worker.h
 void *thread_worker(void *connessione)
@@ -76,8 +75,6 @@ void *thread_worker(void *connessione)
 
     // Contatore usato da 0 a 2 per evitare di ripetere il codice
     int i;
-
-    int buffer_corrente = 0;
 
     /*
         Il worker rimane in ascolto fintanto che il server non si ferma o il
@@ -149,15 +146,13 @@ void *thread_worker(void *connessione)
         if (messaggio->type == 'R') {
             // gestore_utenti.h
             buffer[0] = registrazione_utente(messaggio->msg, socket_id, username);
-            lunghezza_stringa = 2;
-            buffer[1] = '\0';
+            write(socket_id, buffer, 1);
         } else if (messaggio->type == 'L') {
             // gestore_utenti.h
             username = malloc(sizeof(strlen(messaggio->msg)) + 1);
             strcpy(username, messaggio->msg);
             buffer[0] = login_utente(messaggio->msg, socket_id);
-            buffer[1] = '\0';
-            lunghezza_stringa = 2;
+            write(socket_id, buffer, 1);
         } else if (messaggio->type == MSG_LIST) {
             // gestore_utenti.h
             elenca_utenti_connessi(risposta);
@@ -174,34 +169,47 @@ void *thread_worker(void *connessione)
             buffer = realloc(buffer, lunghezza_stringa);
             sprintf(
                 buffer,
-                "%c0000%04zu%s",
-                MSG_LIST,
+                "%04zu%s",
                 strlen(risposta),
                 risposta
             );
+            write(socket_id, buffer, lunghezza_stringa - 1);
         } else if (messaggio->type == MSG_LOGOUT) {
           // gestione_utenti.h
           logout_utente(username);
           // Usciamo dal ciclo
           break;
-        } else if (messaggio->type == 'B'){
-            printf("broadcast \n");
-        } else {
-            printf("%c\n", messaggio->type);
-            if (messaggio->type != 'B')
-              printf("%s\n", messaggio->receiver);
-            printf("%s\n", messaggio->msg);
-            buffer[0] = MSG_OK;
-            buffer[1] = '\0';
-            lunghezza_stringa = 2;
-        }
+        } else if (messaggio->type == MSG_BRDCAST){
+            // thread_dispatcher.h
+            inserisci(messaggio->msg, MSG_BRDCAST, -1);
+        } else if (messaggio->type == MSG_SINGLE) {
+            // gestione_utenti.h
+            if (esiste_utente(messaggio->receiver) == 1) {
+                // Se l'utente non esiste passiamo al ciclo succesivo
+                continue;
+            }
 
-        /*
-            Qualunque sia stata la risposta, la inviamo al client, senza il
-            terminatore di stringa perché sapendo esattamente la dimensione
-            della stringa il client non ha bisogno del terminatore
-         */
-        write(socket_id, buffer, lunghezza_stringa - 1);
+            // thread_dispatcher.h
+            char *stringa_supporto = malloc(strlen(username) + strlen(messaggio->receiver) + strlen(messaggio->msg) + 4);
+            sprintf(
+                stringa_supporto,
+                "%04zu%s:%s:%s",
+                strlen(username) + strlen(messaggio->receiver) + strlen(messaggio->msg) + 2,
+                username,
+                messaggio->receiver,
+                messaggio->msg
+            );
+
+            inserisci(
+                stringa_supporto,
+                MSG_SINGLE,
+                sockid_username(messaggio->receiver)
+            );
+            free(stringa_supporto);
+        } else {
+            // TODO error
+            printf("Cella in avaria, tento un atterraggio di fortuna\n");
+        }
 
         // Resettiamo il buffer in modo da evitare errori alla prossima lettura
         bzero(buffer, lunghezza_stringa);
