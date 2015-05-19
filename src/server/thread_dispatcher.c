@@ -50,7 +50,8 @@ void *thread_dispatcher(void *arg)
     puntatore_buffer->writepos = 0;
 
     while (go) {
-        estrai(messaggio, &tipo_messaggio, &sockid_destinatario);
+        estrai(&messaggio, &tipo_messaggio, &sockid_destinatario);
+        printf("there %s\n", messaggio);
 
         if (tipo_messaggio == MSG_SINGLE) {
             if (write(sockid_destinatario, messaggio, strlen(messaggio)) == -1) {
@@ -61,6 +62,8 @@ void *thread_dispatcher(void *arg)
             // TODO broadcast
             //while ((nome_utente = strtok(elenco_utenti, "\n")) != 0)
         }
+
+        free(messaggio);
     }
     pthread_exit(NULL);
 }
@@ -77,6 +80,7 @@ void inserisci (char *messaggio, char tipo_messaggio, int sockid_destinatario)
   puntatore_buffer->messaggio[puntatore_buffer->writepos] = malloc(strlen(messaggio));
   strcpy(puntatore_buffer->messaggio[puntatore_buffer->writepos], messaggio);
   puntatore_buffer->sockid_destinatario[puntatore_buffer->writepos] = sockid_destinatario;
+
   puntatore_buffer->tipo_messaggio[puntatore_buffer->writepos] = tipo_messaggio;
 
   puntatore_buffer->cont++;
@@ -92,7 +96,7 @@ void inserisci (char *messaggio, char tipo_messaggio, int sockid_destinatario)
   pthread_mutex_unlock(&puntatore_buffer->mutex);
 }
 
-void estrai(char *messaggio, char *tipo_messaggio, int *sockid_destinatario)
+void estrai(char **messaggio, char *tipo_messaggio, int *sockid_destinatario)
 {
   pthread_mutex_lock(&puntatore_buffer->mutex);
 
@@ -103,9 +107,7 @@ void estrai(char *messaggio, char *tipo_messaggio, int *sockid_destinatario)
   *tipo_messaggio = puntatore_buffer->tipo_messaggio[puntatore_buffer->readpos];
   *sockid_destinatario = puntatore_buffer->sockid_destinatario[puntatore_buffer->readpos];
 
-  messaggio = realloc(messaggio, sizeof(puntatore_buffer->messaggio[puntatore_buffer->readpos]));
-  strcpy(messaggio, puntatore_buffer->messaggio[puntatore_buffer->readpos]);
-
+  *messaggio = strdup(puntatore_buffer->messaggio[puntatore_buffer->readpos]);
 
   puntatore_buffer->cont--;
   puntatore_buffer->readpos++;

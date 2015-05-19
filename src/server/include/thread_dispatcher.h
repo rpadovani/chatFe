@@ -34,6 +34,6 @@ void inserisci (char *messaggio, char tipo_messaggio, int sockid_destinatario);
     La funzione estrai prende gli elementi dal buffer circolare e li scrive
     nelle tre variabili passate come argomento.
  */
-void estrai (char *messaggio, char *tipo_messaggio, int *sockid_destinatario);
+void estrai (char **messaggio, char *tipo_messaggio, int *sockid_destinatario);
 
 #endif

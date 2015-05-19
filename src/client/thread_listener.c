@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include <thread_listener.h>
+#include <main_client.h>
 
 void *thread_listener(void *connessione) {
     /*
@@ -20,8 +21,7 @@ void *thread_listener(void *connessione) {
     // Lunghezza del prossimo campo da leggere dal socket
     int lunghezza_messaggio;
     while (read(socket_id, buffer, sizeof(int)) > 0) {
-      printf("Il figlio del figlio dei fiori\n");
-        // Leggiamo il primo carattere: la lunghezza del messaggio
+        // Leggiamo i primi 4 byte: la lunghezza del messaggio
         lunghezza_messaggio = atoi(buffer);
 
         if (lunghezza_messaggio > 0) {

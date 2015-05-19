@@ -158,22 +158,20 @@ void *thread_worker(void *connessione)
             elenca_utenti_connessi(risposta);
             /*
                 Prepariamo la risposta con questa struttura:
-                - 1 byte di tipo di messaggio
-                - 4 byte di int che indica la lunghezza del sender
-                      (0 in questo caso)
                 - 4 byte di int che indica la lunghezza della risposta
                 - n byte di risposta
-                - 1 byte di terminatore di stringa (che poi non sarà inviato)
+                - 1 byte di terminatore di stringa
              */
-            lunghezza_stringa = 1 + 4 + 4 + strlen(risposta) + 1;
+            lunghezza_stringa = 4 + strlen(risposta) + 1;
             buffer = realloc(buffer, lunghezza_stringa);
             sprintf(
                 buffer,
                 "%04zu%s",
-                strlen(risposta),
+                strlen(risposta) + 1,
                 risposta
             );
-            write(socket_id, buffer, lunghezza_stringa - 1);
+            buffer[lunghezza_stringa] = '\0';
+            write(socket_id, buffer, lunghezza_stringa);
         } else if (messaggio->type == MSG_LOGOUT) {
           // gestione_utenti.h
           logout_utente(username);
@@ -190,11 +188,28 @@ void *thread_worker(void *connessione)
             }
 
             // thread_dispatcher.h
-            char *stringa_supporto = malloc(strlen(username) + strlen(messaggio->receiver) + strlen(messaggio->msg) + 4);
+            /*
+                La lunghezza della stringa tiene conto di:
+                - n bytes di mittente
+                - 1 byte di :
+                - n bytes di destinatario
+                - 1 byte di :
+                - n bytes di messaggio
+
+                Il messaggio contiene già il terminatore di stringa
+             */
+            lunghezza_stringa = strlen(username) + 1 +
+            strlen(messaggio->receiver) + 1 + strlen(messaggio->msg);
+            printf("there \n");
+
+            // Nella stringa ci deve essere spazio anche per i 4 bytes di int
+            char *stringa_supporto = malloc(lunghezza_stringa + 3);
+            printf("there2 \n");
+
             sprintf(
                 stringa_supporto,
-                "%04zu%s:%s:%s",
-                strlen(username) + strlen(messaggio->receiver) + strlen(messaggio->msg) + 2,
+                "%04i%s:%s:%s",
+                lunghezza_stringa,
                 username,
                 messaggio->receiver,
                 messaggio->msg
@@ -208,6 +223,7 @@ void *thread_worker(void *connessione)
             free(stringa_supporto);
         } else {
             // TODO error
+            printf("->%c<- \n", messaggio->type);
             printf("Cella in avaria, tento un atterraggio di fortuna\n");
         }
 
