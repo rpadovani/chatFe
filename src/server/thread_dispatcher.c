@@ -40,7 +40,6 @@ void *thread_dispatcher(void *arg)
     char tipo_messaggio;
     int sockid_destinatario = -1;
     char *elenco_utenti = malloc(sizeof(char));
-    //char *nome_utente[256];
 
     pthread_mutex_init(&puntatore_buffer->mutex, NULL);
     pthread_cond_init(&puntatore_buffer->PIENO, NULL);
@@ -58,10 +57,20 @@ void *thread_dispatcher(void *arg)
             }
         } else {
             elenca_utenti_connessi(elenco_utenti);
-            // TODO broadcast
-            //while ((nome_utente = strtok(elenco_utenti, "\n")) != 0)
-        }
+            // Almeno un utente connesso c'è (chi ha inviato il messaggio)
+            char *nome_utente = strtok(elenco_utenti, ":");
 
+            do {
+                if (write(
+                      sockid_username(nome_utente),
+                      messaggio,
+                      strlen(messaggio)
+                  ) == -1) {
+                    // TODO gestione errore
+                }
+                nome_utente = strtok(NULL, ":");
+            } while (nome_utente != NULL);
+        }
         free(messaggio);
         messaggio = malloc(sizeof(char));
     }

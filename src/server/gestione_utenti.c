@@ -156,10 +156,17 @@ char registrazione_utente(char *messaggio, int socket_id, char *username)
     utente->uname = username;
     utente->fullname = nome;
     utente->email = mail;
-    // Il login sarà effettuato in un secondo momento
     utente->sockid = socket_id;
+
+    // Facciamo il login
+    posizione ultimo_elemento = ULTIMOLISTA(utenti_connessi);
+    INSLISTA(username, &ultimo_elemento);
+    
     // Inseriamo la struttura appena popolata.
     INSERISCIHASH(utente->uname, (void*) utente, HASH_TABLE);
+    free(utente);
+    free(nome);
+    free(mail);
     return MSG_OK;
 }
 

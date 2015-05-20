@@ -182,7 +182,32 @@ void *thread_worker(void *connessione)
           break;
         } else if (messaggio->type == MSG_BRDCAST){
             // thread_dispatcher.h
-            inserisci(messaggio->msg, MSG_BRDCAST, -1);
+            // thread_dispatcher.h
+            /*
+                La lunghezza della stringa tiene conto di:
+                - n bytes di mittente
+                - 1 byte di :
+                - 1 byte di destinatario
+                - 1 byte di :
+                - n bytes di messaggio
+
+                Il messaggio contiene già il terminatore di stringa
+             */
+            lunghezza_stringa = strlen(username) + 1 + 1 + 1 + strlen(messaggio->msg);
+
+            // Nella stringa ci deve essere spazio anche per i 4 bytes di int
+            char *stringa_supporto = malloc(lunghezza_stringa + 4);
+
+            sprintf(
+                stringa_supporto,
+                "%04i%s:*:%s",
+                lunghezza_stringa,
+                username,
+                messaggio->msg
+            );
+
+            inserisci(stringa_supporto, MSG_BRDCAST, -1);
+            free(stringa_supporto);
         } else if (messaggio->type == MSG_SINGLE) {
             // gestione_utenti.h
             if (esiste_utente(messaggio->receiver) == 1) {
