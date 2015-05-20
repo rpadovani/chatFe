@@ -51,7 +51,6 @@ void *thread_dispatcher(void *arg)
 
     while (go) {
         estrai(&messaggio, &tipo_messaggio, &sockid_destinatario);
-        printf("there %s\n", messaggio);
 
         if (tipo_messaggio == MSG_SINGLE) {
             if (write(sockid_destinatario, messaggio, strlen(messaggio)) == -1) {
@@ -64,6 +63,7 @@ void *thread_dispatcher(void *arg)
         }
 
         free(messaggio);
+        messaggio = malloc(sizeof(char));
     }
     pthread_exit(NULL);
 }
@@ -77,8 +77,7 @@ void inserisci (char *messaggio, char tipo_messaggio, int sockid_destinatario)
   }
 
   // scrivi MSG e aggiornato stato puntatore_buffer
-  puntatore_buffer->messaggio[puntatore_buffer->writepos] = malloc(strlen(messaggio));
-  strcpy(puntatore_buffer->messaggio[puntatore_buffer->writepos], messaggio);
+  puntatore_buffer->messaggio[puntatore_buffer->writepos] = strdup(messaggio);
   puntatore_buffer->sockid_destinatario[puntatore_buffer->writepos] = sockid_destinatario;
 
   puntatore_buffer->tipo_messaggio[puntatore_buffer->writepos] = tipo_messaggio;

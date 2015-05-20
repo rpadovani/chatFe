@@ -94,6 +94,7 @@ void *thread_worker(void *connessione)
         for (i = 0; i < 2; i++) {
             // Il buffer deve essere pronto a leggere un'int
             buffer = realloc(buffer, sizeof(int));
+
             // Leggiamo la lunghezza della stringa
             if (read(socket_id, buffer, sizeof(int)) != sizeof(int)) {
                 printf("WOPS 1 %s\n", buffer);
@@ -105,13 +106,15 @@ void *thread_worker(void *connessione)
                 spazio di cui abbiamo bisogno
              */
             lunghezza_stringa = atoi(buffer) * sizeof(char);
+            bzero(buffer, sizeof(int));
 
             /*
                 Leggiamo il nostro prossimo campo, di cui sappiamo la lunghezza
                 Se non riusciamo a leggere tutto il campo, generiamo un errore
              */
             if (lunghezza_stringa > 0) {
-                buffer = realloc(buffer, lunghezza_stringa);
+                buffer = realloc(buffer, lunghezza_stringa + 1);
+                buffer[lunghezza_stringa] = '\0';
                 if (read(socket_id, buffer, lunghezza_stringa) != lunghezza_stringa) {
                     printf("WOPS 2\n");
                 }
@@ -128,14 +131,12 @@ void *thread_worker(void *connessione)
                  */
                 switch (i) {
                     case 0:
-                        messaggio->receiver = malloc(lunghezza_stringa + 1);
-                        strcpy(messaggio->receiver, buffer);
-                        messaggio->receiver[lunghezza_stringa] = '\0';
+                        messaggio->receiver = strdup(buffer);
+                        bzero(buffer, strlen(buffer));
                         break;
                     case 1:
-                        messaggio->msg = malloc(lunghezza_stringa + 1);
-                        strcpy(messaggio->msg, buffer);
-                        messaggio->msg[lunghezza_stringa] = '\0';
+                        messaggio->msg = strdup(buffer);
+                        bzero(buffer, strlen(buffer));
                         break;
                     default:
                         printf("Questo messaggio non sarà mai stampato\n");
@@ -163,7 +164,9 @@ void *thread_worker(void *connessione)
                 - 1 byte di terminatore di stringa
              */
             lunghezza_stringa = 4 + strlen(risposta) + 1;
+
             buffer = realloc(buffer, lunghezza_stringa);
+
             sprintf(
                 buffer,
                 "%04zu%s",
@@ -200,11 +203,9 @@ void *thread_worker(void *connessione)
              */
             lunghezza_stringa = strlen(username) + 1 +
             strlen(messaggio->receiver) + 1 + strlen(messaggio->msg);
-            printf("there \n");
 
             // Nella stringa ci deve essere spazio anche per i 4 bytes di int
-            char *stringa_supporto = malloc(lunghezza_stringa + 3);
-            printf("there2 \n");
+            char *stringa_supporto = malloc(lunghezza_stringa + 4);
 
             sprintf(
                 stringa_supporto,
@@ -228,10 +229,15 @@ void *thread_worker(void *connessione)
         }
 
         // Resettiamo il buffer in modo da evitare errori alla prossima lettura
-        bzero(buffer, lunghezza_stringa);
+        free(buffer);
+        buffer = malloc(sizeof(char));
     } // end while
 
-    // Prima di uscire chiudiamo la socket
+    // Prima di uscire chiudiamo la socket e puliamo le malloc
+    free(buffer);
+    free(risposta);
+    free(messaggio);
+    free(username);
     close(socket_id);
     pthread_exit(NULL);
 }
