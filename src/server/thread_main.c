@@ -28,7 +28,7 @@
     La cdefine SERVER_PORT definisce la porta su cui il server rimarrà in
     ascolto
  */
-#define SERVER_PORT 8888
+#define SERVER_PORT 57223
 
 #define K 256
 

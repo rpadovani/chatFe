@@ -133,40 +133,33 @@ char login_utente(char *username, int socket_id)
 }
 
 // gestione_utenti.h
-char registrazione_utente(char *messaggio, int socket_id, char *username)
+char registrazione_utente(char *messaggio, int socket_id, char **username)
 {
-    char *nome;
-    char *mail;
     hdata_t *utente;
 
     // Il messaggio è nel formato username:nome:mail
-    username = strdup(strtok(messaggio, ":"));
+    *username = strdup(strtok(messaggio, ":"));
 
     // Lo username non deve essere registrato
-    if (CERCAHASH(username, HASH_TABLE) != NULL) {
+    if (CERCAHASH(*username, HASH_TABLE) != NULL) {
       // TODO error management
 
         return MSG_ERROR;
     }
 
-    nome = strdup(strtok(NULL, ":"));
-    mail = strdup(strtok(NULL, ":"));
-
     utente = (hdata_t *) malloc(sizeof(hdata_t));
-    utente->uname = username;
-    utente->fullname = nome;
-    utente->email = mail;
+    utente->uname = strdup(*username);
+    utente->fullname = strdup(strtok(NULL, ":"));
+    utente->email = strdup(strtok(NULL, ":"));
     utente->sockid = socket_id;
 
     // Facciamo il login
     posizione ultimo_elemento = ULTIMOLISTA(utenti_connessi);
-    INSLISTA(username, &ultimo_elemento);
-    
+    INSLISTA(utente->uname, &ultimo_elemento);
+
     // Inseriamo la struttura appena popolata.
     INSERISCIHASH(utente->uname, (void*) utente, HASH_TABLE);
-    free(utente);
-    free(nome);
-    free(mail);
+
     return MSG_OK;
 }
 

@@ -62,7 +62,7 @@ void *thread_worker(void *connessione)
     int socket_id = *(int*)connessione;
 
     // Il nome dell'utente che sta utilizzando questo worker
-    char *username;
+    char *username = malloc(sizeof(char));
 
     /*
         Salveremo man mano qua la lunghezza della successiva stringa da leggere
@@ -146,7 +146,7 @@ void *thread_worker(void *connessione)
 
         if (messaggio->type == 'R') {
             // gestore_utenti.h
-            buffer[0] = registrazione_utente(messaggio->msg, socket_id, username);
+            buffer[0] = registrazione_utente(messaggio->msg, socket_id, &username);
             write(socket_id, buffer, 1);
         } else if (messaggio->type == 'L') {
             // gestore_utenti.h

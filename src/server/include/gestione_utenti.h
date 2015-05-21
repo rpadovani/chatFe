@@ -26,7 +26,7 @@ void carica_utenti(void);
 
     Nel parametro username inserisce il nuovo username estraendolo dal messaggio
  */
-char registrazione_utente(char *messaggio, int socket_id, char *username);
+char registrazione_utente(char *messaggio, int socket_id, char **username);
 
 /*
     La funzione cerca l'username passato come argomento nell'hash table.

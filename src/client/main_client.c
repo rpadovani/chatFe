@@ -25,7 +25,7 @@
     La define SERVER_PORT definisce la porta su cui ci aspettiamo che il server
     sia in ascolto
  */
-#define SERVER_PORT 8888
+#define SERVER_PORT 57223
 
 #define MSG_LOGIN 'L'
 #define MSG_REGLOG 'R'
