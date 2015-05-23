@@ -1,5 +1,3 @@
-# Alcune costanti utili per la build
-
 # Directory che contiene la definizione di tutte le funzioni
 IDIRSERVER=src/server/include
 IDIRCLIENT=src/client/include
@@ -7,16 +5,15 @@ IDIRCLIENT=src/client/include
 ODIRSERVER=obj/server
 ODIRCLIENT=obj/client
 
-# Macro per includere le librerie di sistema necessarie, ed eventualmente
-# altre flag di gcc
+# Librerie da includere nella build
 LIBS=-lpthread
 
-# Variabili di make
+# VFlags di GCC per il server e per il client
 CFLAGSSERVER=-I$(IDIRSERVER) -Wall -Werror
 CFLAGSCLIENT=-I$(IDIRCLIENT) -Wall -Werror
 
 # Lista delle dipendenze da buildare prese dalla directory include
-# (prima vengono listate e poi viene posta prima ai nomi la directory che li
+# (prima vengono listate e poi viene preposta ai nomi la directory che li
 # contiene)
 _DEPSSERVER = thread_main.h gestione_utenti.h hash.h common.h lista.h thread_worker.h thread_dispatcher.h
 DEPSSERVER = $(patsubst %,$(IDIRSERVER)/%,$(_DEPSSERVER))
@@ -24,15 +21,15 @@ DEPSSERVER = $(patsubst %,$(IDIRSERVER)/%,$(_DEPSSERVER))
 _DEPSCLIENT = main_client.h thread_listener.h thread_writer.h
 DEPSCLIENT = $(patsubst %,$(IDIRCLIENT)/%,$(_DEPSCLIENT))
 
-# Lista dei file che verranno prodotti nella directory dei file compilati da
-# parte del server (prima vengono listati poi viene aggiunta la directory)
+# Lista dei file che verranno prodotti nella directory dei file compilati
+# (prima vengono listati poi viene aggiunta la directory)
 _OBJSERVER = main_server.o thread_main.o gestione_utenti.o hash.o lista.o thread_worker.o thread_dispatcher.o
 OBJSERVER = $(patsubst %,$(ODIRSERVER)/%,$(_OBJSERVER))
 
 _OBJCLIENT = main_client.o thread_listener.o thread_writer.o
 OBJCLIENT = $(patsubst %,$(ODIRCLIENT)/%,$(_OBJCLIENT))
 
-# Specifichiamo che clean, install e chat sono comandi e non file
+# Specifichiamo i comandi
 .PHONY: clean
 .PHONY: install
 .PHONY: chat
@@ -63,13 +60,16 @@ $(ODIRCLIENT)/%.o: src/client/%.c $(DEPSCLIENT)
 chat: server client
 
 server: $(OBJSERVER)
+	mkdir -p obj/chat-server
 	gcc -o $(ODIRSERVER)/chat-server $^ $(CFLAGSSERVER) $(LIBS)
 
 client: $(OBJCLIENT)
+	mkdir -p obj/chat-client
 	gcc -o $(ODIRCLIENT)/chat-client $^ $(CFLAGSCLIENT) $(LIBS)
 
 # Copiamo i file eseguibli nella cartella bin
 install:
+	mkdir -p bin
 	cp $(ODIRSERVER)/chat-server bin/chat-server
 	cp $(ODIRCLIENT)/chat-client bin/chat-client
 
