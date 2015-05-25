@@ -2,9 +2,25 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <signal.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
 
 #include <thread_main.h>
+#include <thread_dispatcher.h>
 #include <main_server.h>
+
+#define PROTOCOLLO AF_INET
+#define MSG_BRDCAST 'B'
+
+
+// Indirizzo del server su cui è in esecuzione il programma server
+#define SERVER_IP "127.0.0.1"
+
+/*
+   La define SERVER_PORT definisce la porta su cui ci aspettiamo che il server
+   sia in ascolto
+*/
+#define SERVER_PORT 57223
 
 // main_server.h
 sig_atomic_t go;
@@ -36,6 +52,8 @@ int main(int argc, char *argv[])
      */
     struct sigaction setup_action;
     setup_action.sa_handler = signal_handler;
+    sigaction(SIGINT,  &setup_action, 0);
+    sigaction(SIGTERM, &setup_action, 0);
 
     /*
         argc deve essere uguale a 3, il primo parametro è il nome del comando,
@@ -86,15 +104,6 @@ int main(int argc, char *argv[])
         }
 
         pthread_join(main_thread, NULL);
-
-        // Attendiamo il segnale di kill
-        if (sigaction(SIGINT,  &setup_action, 0) < 0) {
-            fprintf(stderr, "Il segnale non è stato interpretato\n");
-        }
-
-        if (sigaction(SIGTERM, &setup_action, 0) < 0) {
-            fprintf(stderr, "Il segnale non è stato interpretato\n");
-        }
     } else if (pid == -1) {
         /*
             Il pid è -1, la fork è fallita: registriamo l'errore e terminiamo
@@ -110,13 +119,23 @@ int main(int argc, char *argv[])
 // main_server.h
 void signal_handler(int signal_number)
 {
-    switch(signal_number) {
-      case SIGTERM:
-      case SIGINT:
-        // Se il segnale è uno di quelli che ci interessa settiamo go a zero
-        go = 0;
-        break;
-    }
+    go = 0;
+
+    int socket_id;
+    struct sockaddr_in fake;
+
+    // Creiamo una socket
+    socket_id = socket(PROTOCOLLO, SOCK_STREAM, 0);
+
+    // Prepariamo la nostra sockaddr_in in una struttra dedicata
+    fake.sin_family = PROTOCOLLO;
+    fake.sin_addr.s_addr = inet_addr(SERVER_IP);
+    fake.sin_port = htons(SERVER_PORT);
+
+    // Sblocchiamo l'accept
+    connect(socket_id, (struct sockaddr *)&fake, sizeof(fake));
+
+    inserisci("0007#logout", MSG_BRDCAST, -1);
 }
 /*
 

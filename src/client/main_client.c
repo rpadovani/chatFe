@@ -318,6 +318,10 @@ int main(int argc, char *argv[])
     }
 
     pthread_join(thread_listener_id, NULL);
+
+    close(socket_id);
+    return 0;
+
     pthread_join(thread_writer_id, NULL);
 
     close(socket_id);

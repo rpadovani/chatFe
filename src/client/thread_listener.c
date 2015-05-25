@@ -29,6 +29,11 @@ void *thread_listener(void *connessione) {
             if (read(socket_id, buffer, lunghezza_messaggio) != lunghezza_messaggio) {
                 printf("WOPS 2\n");
             }
+
+            if (lunghezza_messaggio == 7 && strcmp(buffer, "#logout") == 0) {
+                printf("Il server remoto è stato spento, addio!\n");
+                pthread_exit(NULL);
+            }
             printf("%s\n", buffer);
         }
 
