@@ -24,8 +24,10 @@ void *thread_listener(void *connessione) {
         // Leggiamo i primi 4 byte: la lunghezza del messaggio
         lunghezza_messaggio = atoi(buffer);
 
+
         if (lunghezza_messaggio > 0) {
-            buffer = realloc(buffer, lunghezza_messaggio);
+            buffer = realloc(buffer, lunghezza_messaggio + 1);
+            buffer[lunghezza_messaggio] = '\0';
             if (read(socket_id, buffer, lunghezza_messaggio) != lunghezza_messaggio) {
                 printf("WOPS 2\n");
             }

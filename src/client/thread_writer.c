@@ -49,7 +49,13 @@ void *thread_writer(void *connessione) {
     size_t lunghezza_linea = 0;
 
     while (getline(&linea, &lunghezza_linea, stdin) != -1) {
-        messaggio->type = tipo_messaggio(strtok(linea, " "));
+        if (linea[6] == ':') {
+            strtok(linea, ":");
+            messaggio->msg = strtok(NULL, "\n");
+            messaggio->type = MSG_BRDCAST;
+        } else {
+            messaggio->type = tipo_messaggio(strtok(linea, " "));
+        }
 
         if (messaggio->type == '0') {
           // Il messaggio non e valido, saltiamo alla prossima iterazione
@@ -60,16 +66,6 @@ void *thread_writer(void *connessione) {
         if (messaggio->type == MSG_SINGLE) {
             messaggio->receiver = strtok(NULL, ":");
             messaggio->msg = strtok(NULL, "\n");
-
-            /*
-              Se il messaggio e nullo e perche non c'e receiver (essendo letto
-              prima e non trovando il delimiter strtok restituisce tutta la
-              stringa), quindi abbiamo un messaggio broadcast
-             */
-            if (messaggio->msg == NULL) {
-              messaggio->msg = strtok(messaggio->receiver, "\n");
-              messaggio->type = MSG_BRDCAST;
-            }
         }
 
         /*
@@ -81,6 +77,11 @@ void *thread_writer(void *connessione) {
           - n byte di messaggio
         */
         if (messaggio->type == MSG_SINGLE || messaggio->type == MSG_BRDCAST) {
+            if (messaggio->msg == NULL) {
+                // Ignoriamo i messaggi vuoi
+                continue;
+            }
+
             dimensione_buffer = 1 + 4 + 4 + strlen(messaggio->msg);
 
             if (messaggio->type == MSG_SINGLE) {
