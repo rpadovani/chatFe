@@ -249,12 +249,6 @@ int sockid_username(char *username)
 
 void salva_hashtable(void)
 {
-    // Controlliamo di aver i permessi in lettura del file
-    if (access(file_utenti, 2) != 0) {
-        // TODO error
-        return;
-    }
-
     FILE *p_file = fopen(file_utenti, "w+");
 
     if (p_file == NULL) {
