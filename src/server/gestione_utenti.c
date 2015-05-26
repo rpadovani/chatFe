@@ -26,6 +26,8 @@ static hash_t HASH_TABLE;
  */
 static lista utenti_connessi;
 
+static lista utenti_registrati;
+
 #define MSG_OK 'O'
 #define MSG_ERROR 'E'
 
@@ -35,6 +37,10 @@ void carica_utenti(void)
     hdata_t *utente;
 
     utenti_connessi = CREALISTA();
+    utenti_registrati = CREALISTA();
+
+    posizione ultimo_utente_registrato;
+
     HASH_TABLE = CREAHASH();
     /*
         Controlliamo se il file esiste con la funzione access(). È disponibile
@@ -98,6 +104,8 @@ void carica_utenti(void)
                         Popoliamo la struct nuovo utente e inseriamola in hash
                         con le funzioni che ci sono state fornite
                     */
+                    ultimo_utente_registrato = ULTIMOLISTA(utenti_registrati);
+                    INSLISTA(utente->uname, &ultimo_utente_registrato);
                     utente->sockid   = -1;
                     INSERISCIHASH(utente->uname, (void*) utente, HASH_TABLE);
                 }
@@ -156,6 +164,9 @@ char registrazione_utente(char *messaggio, int socket_id, char **username)
     // Facciamo il login
     posizione ultimo_elemento = ULTIMOLISTA(utenti_connessi);
     INSLISTA(utente->uname, &ultimo_elemento);
+
+    posizione ultimo_utente_registrato = ULTIMOLISTA(utenti_registrati);
+    INSLISTA(utente->uname, &ultimo_utente_registrato);
 
     // Inseriamo la struttura appena popolata.
     INSERISCIHASH(utente->uname, (void*) utente, HASH_TABLE);
@@ -229,9 +240,44 @@ int esiste_utente(char *username)
 
 int sockid_username(char *username)
 {
-  hdata_t *risultato_ricerca = NULL;
-  if ((risultato_ricerca = CERCAHASH(username, HASH_TABLE)) == NULL) {
-      return -1;
-  }
-  return risultato_ricerca->sockid;
+    hdata_t *risultato_ricerca = NULL;
+    if ((risultato_ricerca = CERCAHASH(username, HASH_TABLE)) == NULL) {
+        return -1;
+    }
+    return risultato_ricerca->sockid;
+}
+
+void salva_hashtable(void)
+{
+    // Controlliamo di aver i permessi in lettura del file
+    if (access(file_utenti, 2) != 0) {
+        // TODO error
+        return;
+    }
+
+    FILE *p_file = fopen(file_utenti, "w+");
+
+    if (p_file == NULL) {
+        // TODO error
+        return;
+    }
+
+    posizione elemento_lista = PRIMOLISTA(utenti_registrati);
+    hdata_t *risultato_ricerca = NULL;
+
+    while (PREDLISTA(elemento_lista) != ULTIMOLISTA(utenti_registrati)) {
+        if ((risultato_ricerca = CERCAHASH(elemento_lista->elemento, HASH_TABLE)) == NULL) {
+             continue;
+        }
+
+        fprintf(p_file, "%s:%s:%s\n",
+            risultato_ricerca->uname,
+            risultato_ricerca->fullname,
+            risultato_ricerca->email
+        );
+
+        elemento_lista = SUCCLISTA(elemento_lista);
+    }
+
+    fclose(p_file);
 }

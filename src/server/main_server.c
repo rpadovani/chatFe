@@ -8,6 +8,7 @@
 #include <thread_main.h>
 #include <thread_dispatcher.h>
 #include <main_server.h>
+#include <gestione_utenti.h>
 
 #define PROTOCOLLO AF_INET
 #define MSG_BRDCAST 'B'
@@ -121,6 +122,8 @@ void signal_handler(int signal_number)
 {
     go = 0;
 
+    salva_hashtable();
+
     int socket_id;
     struct sockaddr_in fake;
 
@@ -134,7 +137,9 @@ void signal_handler(int signal_number)
 
     // Sblocchiamo l'accept
     connect(socket_id, (struct sockaddr *)&fake, sizeof(fake));
+    close(socket_id);
 
+    // Mandiamo il messaggio di logout a tutti i client connessi
     inserisci("0007#logout", MSG_BRDCAST, -1);
 }
 /*

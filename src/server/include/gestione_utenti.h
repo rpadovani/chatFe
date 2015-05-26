@@ -57,4 +57,6 @@ void logout_utente(char *username);
 int esiste_utente(char *username);
 
 int sockid_username(char *username);
+
+void salva_hashtable(void);
 #endif
