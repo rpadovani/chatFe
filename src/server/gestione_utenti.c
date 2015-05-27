@@ -7,6 +7,7 @@
 #include <gestione_utenti.h>
 #include <main_server.h>
 #include <lista.h>
+#include <log.h>
 
 /*
     Per la descrizione generale delle funzioni presenti in questo file
@@ -133,6 +134,7 @@ char login_utente(char *username, int socket_id)
     if (risultato_ricerca != NULL && risultato_ricerca->sockid == -1) {
         INSLISTA(username, &ultimo_elemento);
         risultato_ricerca->sockid = socket_id;
+        log_login(username);
         return MSG_OK;
     }
 
@@ -164,6 +166,8 @@ char registrazione_utente(char *messaggio, int socket_id, char **username)
     // Facciamo il login
     posizione ultimo_elemento = ULTIMOLISTA(utenti_connessi);
     INSLISTA(utente->uname, &ultimo_elemento);
+
+    log_login(*username);
 
     posizione ultimo_utente_registrato = ULTIMOLISTA(utenti_registrati);
     INSLISTA(utente->uname, &ultimo_utente_registrato);
@@ -217,6 +221,8 @@ void logout_utente(char *username)
     if ((risultato_ricerca = CERCAHASH(username, HASH_TABLE)) == NULL) {
       // TODO error management
     }
+
+    log_logout(username);
 
     risultato_ricerca->sockid = -1;
 

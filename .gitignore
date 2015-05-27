@@ -3,3 +3,4 @@ bin/*
 core
 vgcore*
 users.txt
+log.txt

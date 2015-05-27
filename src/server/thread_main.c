@@ -9,6 +9,7 @@
 #include <thread_dispatcher.h>
 #include <gestione_utenti.h>
 #include <main_server.h>
+#include <log.h>
 
 /*
     Per la descrizione delle funzioni presenti in questo file consultare i
@@ -79,6 +80,8 @@ void *thread_main(void *arg)
     // Per prima cosa ci occupiamo di caricare gli utenti nella tabella hash
     // gestione_utenti.h
     carica_utenti();
+
+    init_log();
 
     /*
         Abbiamo caricato gli utenti, ora proviamo a creare la socket.

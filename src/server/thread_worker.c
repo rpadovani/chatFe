@@ -9,6 +9,7 @@
 #include <thread_worker.h>
 #include <thread_dispatcher.h>
 #include <gestione_utenti.h>
+#include <log.h>
 
 // main_server.h
 int go;
@@ -206,6 +207,8 @@ void *thread_worker(void *connessione)
                 messaggio->msg
             );
 
+            log_messaggio_broadcast(username, messaggio->msg);
+
             inserisci(stringa_supporto, MSG_BRDCAST, -1);
             free(stringa_supporto);
         } else if (messaggio->type == MSG_SINGLE) {
@@ -240,6 +243,8 @@ void *thread_worker(void *connessione)
                 messaggio->receiver,
                 messaggio->msg
             );
+
+            log_messaggio_singolo(username, messaggio->receiver, messaggio->msg);
 
             inserisci(
                 stringa_supporto,

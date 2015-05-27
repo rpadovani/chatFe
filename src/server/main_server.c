@@ -13,7 +13,6 @@
 #define PROTOCOLLO AF_INET
 #define MSG_BRDCAST 'B'
 
-
 // Indirizzo del server su cui è in esecuzione il programma server
 #define SERVER_IP "127.0.0.1"
 
