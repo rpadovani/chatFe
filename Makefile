@@ -35,6 +35,7 @@ OBJCLIENT = $(patsubst %,$(ODIRCLIENT)/%,$(_OBJCLIENT))
 .PHONY: chat
 .PHONY: server
 .PHONY: client
+.PHONY: create-folders
 
 # Un po' di magia: creiamo una macro sui file definiti DEPS (cioè i nostri file
 # .h) che specifica che ogni file oggetto .o dipende dai file .c e dal file .h
@@ -57,19 +58,21 @@ $(ODIRCLIENT)/%.o: src/client/%.c $(DEPSCLIENT)
 # compilare i file sia di server che di client
 # Il primo comando si occupa di creare il server, il secondo il client, usando
 # le dipendenze indicate in $LIBS
-chat: server client
+chat: create-folders server client
+
+create-folders:
+	mkdir -p $(ODIRSERVER)
+	mkdir -p $(ODIRCLIENT)
+	mkdir -p bin
 
 server: $(OBJSERVER)
-	mkdir -p obj/chat-server
 	gcc -o $(ODIRSERVER)/chat-server $^ $(CFLAGSSERVER) $(LIBS)
 
 client: $(OBJCLIENT)
-	mkdir -p obj/chat-client
 	gcc -o $(ODIRCLIENT)/chat-client $^ $(CFLAGSCLIENT) $(LIBS)
 
 # Copiamo i file eseguibli nella cartella bin
 install:
-	mkdir -p bin
 	cp $(ODIRSERVER)/chat-server bin/chat-server
 	cp $(ODIRCLIENT)/chat-client bin/chat-client
 
