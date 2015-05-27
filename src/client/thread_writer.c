@@ -1,3 +1,8 @@
+/*****************************************************************
+ *  ChatFe - Progetto di Sistemi Operativi '14/'15 UniFe         *
+ *                                                               *
+ *  Riccardo Padovani (115509) riccardo@rpadovani.com            *
+ *****************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -6,6 +11,7 @@
 
 #include <thread_writer.h>
 
+// Tipi di messaggi così come se li aspetta il server
 #define MSG_OK 'O'
 #define MSG_ERROR 'E'
 #define MSG_SINGLE 'S'
@@ -13,6 +19,7 @@
 #define MSG_LIST 'I'
 #define MSG_LOGOUT 'X'
 
+// thread_writer.h
 void *thread_writer(void *connessione) {
     /*
         Questa struct rappresenta il formato di un messaggio. Verrà usata
@@ -45,10 +52,17 @@ void *thread_writer(void *connessione) {
     // Riferimento alla socket passato per argometno
     int socket_id = *(int*)connessione;
 
+    // La linea letta da stdin e la sua lunghezza
     char *linea = NULL;
     size_t lunghezza_linea = 0;
 
+    // Leggiamo una linea per volta da stdin
     while (getline(&linea, &lunghezza_linea, stdin) != -1) {
+        /*
+            Se il sesto elemento della linea è un : (#dest :whatever) abbiamo
+            un messaggio di broadcast, altrimenti leggiamo il tipo
+            del messaggio
+         */
         if (linea[6] == ':') {
             strtok(linea, ":");
             messaggio->msg = strtok(NULL, "\n");
@@ -58,11 +72,15 @@ void *thread_writer(void *connessione) {
         }
 
         if (messaggio->type == '0') {
-          // Il messaggio non e valido, saltiamo alla prossima iterazione
-          // TODO gestione errori
+          /*
+              Il messaggio non è valido, saltiamo alla prossima iterazione.
+              Non stampiamo niente perché un messaggio di errore per ogni
+              errore di battitura sarebbe snervante
+           */
           continue;
         }
 
+        // Ricaviamo i dati che ci interessano
         if (messaggio->type == MSG_SINGLE) {
             messaggio->receiver = strtok(NULL, ":");
             messaggio->msg = strtok(NULL, "\n");
@@ -73,12 +91,12 @@ void *thread_writer(void *connessione) {
           - 1 byte di tipo di messaggio
           - 4 byte di int che indica la lungezza del receiver
           - n byte di receiver
-          - 4 byte di int che indica la lunghezza del messagggio
+          - 4 byte di int che indica la lunghezza del messaggio
           - n byte di messaggio
         */
         if (messaggio->type == MSG_SINGLE || messaggio->type == MSG_BRDCAST) {
             if (messaggio->msg == NULL) {
-                // Ignoriamo i messaggi vuoi
+                // Ignoriamo i messaggi vuoti
                 continue;
             }
 
@@ -88,8 +106,13 @@ void *thread_writer(void *connessione) {
                 dimensione_buffer += strlen(messaggio->receiver);
             }
 
+            // Aggiungamo un bit per il terminatore, richiesto da sprintf
             buffer = realloc(buffer, dimensione_buffer + 1);
 
+            /*
+                Messaggio singolo e broadcast hanno una struttura leggermente
+                diversa
+             */
             if (messaggio->type == MSG_SINGLE) {
                 sprintf(
                     buffer,
@@ -110,6 +133,7 @@ void *thread_writer(void *connessione) {
                 );
             }
         } else {
+          // Messaggio di logout e ls
           dimensione_buffer = 1 + 4 + 0 + 4 + 0;
           buffer = realloc(buffer, dimensione_buffer + 1);
           sprintf(
@@ -129,6 +153,7 @@ void *thread_writer(void *connessione) {
             continue;
         }
 
+        // L'utente si disconnette, fine dei giochi
         if (messaggio->type == MSG_LOGOUT) {
           break;
         }
@@ -140,6 +165,7 @@ void *thread_writer(void *connessione) {
     pthread_exit(NULL);
 }
 
+// thread_writer.h
 char tipo_messaggio(char *tipo) {
     if (strcmp(tipo, "#ls\n") == 0) {
         return MSG_LIST;

@@ -1,46 +1,36 @@
+/*****************************************************************
+ *  ChatFe - Progetto di Sistemi Operativi '14/'15 UniFe         *
+ *                                                               *
+ *  Riccardo Padovani (115509) riccardo@rpadovani.com            *
+ *****************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <signal.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
 
 #include <main_client.h>
-#include <thread_listener.h>
 #include <thread_writer.h>
+#include <thread_listener.h>
 
-/*
-    La define PROTOCOLLO indica con quale protocollo creare la socket.
-    Accetta due valori:
-    - AF_UNIX se il server e i client girano sullo stesso sistema
-    - AF_INET per connettersi ad un server esterno
- */
-#define PROTOCOLLO AF_INET
-
-// Indirizzo del server su cui è in esecuzione il programma server
+// Indirizzo IP e porta del server
 #define SERVER_IP "127.0.0.1"
-
-/*
-    La define SERVER_PORT definisce la porta su cui ci aspettiamo che il server
-    sia in ascolto
- */
 #define SERVER_PORT 57223
 
+// Define del tipo di messaggi così come concordati con il server
 #define MSG_LOGIN 'L'
 #define MSG_REGLOG 'R'
 #define MSG_OK 'O'
 #define MSG_ERROR 'E'
-#define MSG_SINGLE 'S'
-#define MSG_BRDCAST 'B'
-#define MSG_LIST 'I'
-#define MSG_LOGOUT 'X'
 
 int main(int argc, char *argv[])
 {
     /*
         La variabile rappresenta il riferimento alla socket che verrà aperta
-        e sarà usata da altre funzioni riguardanti la socket
+        e sarà poi usata da thread_writer e thread_listener
      */
     int socket_id;
 
@@ -53,10 +43,24 @@ int main(int argc, char *argv[])
     /*
         Il puntatore punta a una stringa, la cui dimensione sarà allocata
         dinamicamente, su cui scriveremo il messaggio da inviare al server
-        di volta in volta
+        di volta in volta per la registrazione e il login
      */
     char *buffer = malloc(sizeof(char));
 
+    /*
+        Queste variabili sono di supporto: all'interno della funzione le useremo
+        varie volte.
+        In particolare: username conterrà lo username passato da linea di
+        comando al lancio dell´utente.
+
+        Il messaggio_registrazione servirà per contenere una copia del comando
+        di registrazione da inviare al server, che poi sarà inviato da
+        buffer tramite messaggio_invio.
+
+        messaggio_invio si occupa di mantenere una copia del comando da inviare,
+        che poi sarà copiato nel buffer e a cui sarà aggiunta la lunghezza
+        del messaggio stesso
+     */
     char *username;
     char *messaggio_registrazione;
     char *messaggio_invio = malloc(sizeof(char));
@@ -64,10 +68,11 @@ int main(int argc, char *argv[])
     /*
         Per inviare il buffer dobbiamo saperne la dimensione.
         Visto che può tornarci utile in varie occasioni, li dedichiamo
-        una variabile a parte
+        una variabile.
      */
     int dimensione_buffer;
 
+    // Teniamo conto di quanti tentavi di connessione facciamo
     int numero_tentativi_connessione = 0;
 
     /*
@@ -85,10 +90,12 @@ int main(int argc, char *argv[])
     }
 
     /*
-        A questo punto, o viene passato solo un argomento oltre l'eseguibile
+        A questo punto, o viene passato solo un argomento oltre l'eseguibile,
         oppure c'è stata la registrazione, oppure gli argomenti sono sbagliati
      */
-    if (!(argc == 2 || (argc == 4 && argv[1] != NULL && strcmp(argv[1], "-r") == 0))) {
+    if (!(argc == 2 ||
+        (argc == 4 && argv[1] != NULL && strcmp(argv[1], "-r") == 0))
+    ) {
         printf("Comando invocato in maniera sbagliata.\n");
         printf("Consultare -h per ulteriori informazioni.\n");
 
@@ -96,33 +103,38 @@ int main(int argc, char *argv[])
     }
 
     // Creiamo una socket
-    socket_id = socket(PROTOCOLLO, SOCK_STREAM, 0);
+    socket_id = socket(AF_INET, SOCK_STREAM, 0);
 
     if (socket_id < 0) {
-        printf("Impossibile creare la socket");
+        fprintf(stderr, "Impossibile creare la socket\n");
     }
 
     // Prepariamo la nostra sockaddr_in in una struttra dedicata
-    client.sin_family = PROTOCOLLO;
+    client.sin_family = AF_INET;
     client.sin_addr.s_addr = inet_addr(SERVER_IP);
     client.sin_port = htons(SERVER_PORT);
 
     // Proviamo a connetterci
     while (connect(socket_id, (struct sockaddr *)&client, sizeof(client)) < 0) {
         numero_tentativi_connessione++;
-        printf("Connessione fallita. Ritento... [%i/10]\n", numero_tentativi_connessione);
+        printf("Connessione fallita. Ritento... [%i/10]\n",
+          numero_tentativi_connessione);
+
+        // Attendiamo un secondo prima di riprovare a connetterci
         sleep(1);
 
         if (numero_tentativi_connessione == 10) {
-            printf("Impossibile connettersi al server. Bye!\n");
+            fprintf(stderr, "Impossibile connettersi al server. Bye!\n");
             return -1;
         }
     }
 
     /*
-        Se siamo arrivati qua o l'utente o vuole registrarsi o vuole fare
+        Se siamo arrivati qua l'utente o vuole registrarsi o vuole fare
         direttamente il login.
-        In ogni caso prendiamo l'username e facciamo il login
+        In ogni caso ricaviamo l'username e salviamolo.
+        Nel caso di registrazione o login l'username è in una posizione diversa
+        Usiamo una varaibile di supporto per scegliere l'argomento giusto.
      */
     char *argument = (argc == 4 ? argv[3] : argv[1]);
     username = malloc(strlen(argument) + 1);
@@ -130,7 +142,7 @@ int main(int argc, char *argv[])
 
     /*
         Se l'utente ha inserito come primo argomento -r, iniziamo la procedura
-        di registrazione, a cui poi seguirà il login
+        di registrazione, che si occupa anche di fare il login
     */
     if (argc == 4 && strcmp(argv[1], "-r") == 0) {
         messaggio_registrazione = malloc(strlen(argv[2]) + 1);
@@ -210,25 +222,29 @@ int main(int argc, char *argv[])
             sa esattamente quanti byte leggere
          */
         if (write(socket_id, buffer, dimensione_buffer) == -1) {
-            printf("Impossible contattare il server");
+            fprintf(stderr, "Impossible contattare il server\n");
             return -1;
         }
 
         buffer = realloc(buffer, sizeof(char));
         if (read(socket_id, buffer, sizeof(char)) < 0) {
-            printf("Errore leggendo la risposta del server");
+            fprintf(stderr, "Errore leggendo la risposta del server\n");
             return -1;
         }
 
         if (buffer[0] != MSG_OK) {
-            printf("Impossibile registrare l'utente.");
+            fprintf(stderr, "Impossibile registrare l'utente.\n");
             return -1;
         }
 
         printf("Registrazione e login effettuati con successo.\n");
+
+        // Liberiamo alcune delle variaibli utilizzate
+        free(messaggio_registrazione);
+        free(char_da_modificare);
     } else {
         /*
-            Mesaggio di login, la struttura del messaggio da inviare
+            Messaggio di login, la struttura del messaggio da inviare
             al server è la seguente:
             - 1 byte che rappresenta il tipo di connessione
             - 4 byte (1 int) che rappresentano la dimensione del
@@ -253,7 +269,7 @@ int main(int argc, char *argv[])
             sa esattamente quanti byte leggere
          */
         if (write(socket_id, buffer, dimensione_buffer) == -1) {
-            printf("Impossibile effettuare il login");
+            fprintf(stderr, "Impossibile effettuare il login\n");
             return -1;
         }
 
@@ -267,7 +283,7 @@ int main(int argc, char *argv[])
         */
         buffer = realloc(buffer, sizeof(char));
         if (read(socket_id, buffer, sizeof(char)) < 0) {
-            printf("Errore leggendo la risposta del server");
+            fprintf(stderr, "Errore leggendo la risposta del server\n");
             return -1;
         }
 
@@ -280,17 +296,22 @@ int main(int argc, char *argv[])
             //buffer = realloc(buffer, atoi(buffer));
             //read(socket_id, buffer, sizeof(int));
 
-            printf("Impossibile effettuare il login:");
+            fprintf(stderr, "Impossibile effettuare il login\n");
             return -1;
         }
 
         printf("Login effettuato con successo\n");
     }
 
+    // Liberiamo tutte le variabili che abbiamo utilizzato e non servono più
+    free(buffer);
+    free(messaggio_invio);
+    free(username);
+
     /*
-        Arrivati a questo puto il login è avvenuto con successo. Dobbiamo quindi
-        creare i due thread che si occupano di gestire l'invio e la ricezione
-        dei messaggi
+        Arrivati a questo punto il login è avvenuto con successo. Dobbiamo
+        quindi creare i due thread che si occupano di gestire l'invio e la
+        ricezione dei messaggi
      */
     pthread_t thread_listener_id;
     pthread_t thread_writer_id;
@@ -301,8 +322,7 @@ int main(int argc, char *argv[])
             &thread_listener,
             (void *) &socket_id
         ) != 0) {
-          // TODO gestione errori
-        printf("Impossible creare il thread listener");
+        fprintf(stderr, "Impossible creare il thread listener\n");
         return -1;
     }
 
@@ -312,17 +332,27 @@ int main(int argc, char *argv[])
             &thread_writer,
             (void *) &socket_id
         ) != 0) {
-          // TODO gestione errori
-        printf("Impossible creare il thread writer");
+        fprintf(stderr, "Impossible creare il thread writer\n");
         return -1;
     }
 
+    /*
+        Quando uno dei due thread joina è perché ha ricevuto il messaggio di
+        logout, quindi si occupa di chiudere l'altro thread, e poi di terminare
+        il programma.
+
+        In particolare il thread_listener viene chiuso dal messaggio di chiusura
+        inviato dal server quando il server va giù, mentre il thread_writer
+        verrà chiuso se in stdin l'utente scrive #logout
+     */
     pthread_join(thread_listener_id, NULL);
+    pthread_kill(thread_writer_id, 9);
 
     close(socket_id);
     return 0;
 
     pthread_join(thread_writer_id, NULL);
+    pthread_kill(thread_listener_id, 9);
 
     close(socket_id);
     return 0;
