@@ -49,14 +49,10 @@ OBJCLIENT = $(patsubst %,$(ODIRCLIENT)/%,$(_OBJCLIENT))
 # Riassumendo assegna ad ogni file presente nella directory include il proprio
 # file di output (sia per la parte server che per la parte client)
 $(ODIRSERVER)/%.o: src/server/%.c $(DEPSSERVER)
-	@echo 'Compilazione file server'
 	@gcc -c -o $@ $< $(CFLAGSSERVER)
-	@echo 'File server compilati'
 
 $(ODIRCLIENT)/%.o: src/client/%.c $(DEPSCLIENT)
-	@echo 'Compilazione file client'
 	@gcc -c -o $@ $< $(CFLAGSCLIENT)
-	@echo 'File client compilati'
 
 # Il comando chat, che essendo il primo è quello di default, si occupa di
 # compilare i file sia di server che di client
@@ -70,12 +66,10 @@ create-folders:
 	@mkdir -p bin
 
 server: $(OBJSERVER)
-	@echo 'Creazione eseguibile server'
 	@gcc -o $(ODIRSERVER)/chat-server $^ $(CFLAGSSERVER) $(LIBS)
 	@echo 'Server pronto'
 
 client: $(OBJCLIENT)
-	@echo 'Creazione eseguibile client'
 	@gcc -o $(ODIRCLIENT)/chat-client $^ $(CFLAGSCLIENT) $(LIBS)
 	@echo 'Client pronto'
 	@echo 'Ricordati di eseguire make install per spostare gli eseguibili in bin/'
