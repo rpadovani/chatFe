@@ -49,10 +49,14 @@ OBJCLIENT = $(patsubst %,$(ODIRCLIENT)/%,$(_OBJCLIENT))
 # Riassumendo assegna ad ogni file presente nella directory include il proprio
 # file di output (sia per la parte server che per la parte client)
 $(ODIRSERVER)/%.o: src/server/%.c $(DEPSSERVER)
-	gcc -c -o $@ $< $(CFLAGSSERVER)
+	@echo 'Compilazione file server'
+	@gcc -c -o $@ $< $(CFLAGSSERVER)
+	@echo 'File server compilati'
 
 $(ODIRCLIENT)/%.o: src/client/%.c $(DEPSCLIENT)
-	gcc -c -o $@ $< $(CFLAGSCLIENT)
+	@echo 'Compilazione file client'
+	@gcc -c -o $@ $< $(CFLAGSCLIENT)
+	@echo 'File client compilati'
 
 # Il comando chat, che essendo il primo è quello di default, si occupa di
 # compilare i file sia di server che di client
@@ -61,23 +65,30 @@ $(ODIRCLIENT)/%.o: src/client/%.c $(DEPSCLIENT)
 chat: create-folders server client
 
 create-folders:
-	mkdir -p $(ODIRSERVER)
-	mkdir -p $(ODIRCLIENT)
-	mkdir -p bin
+	@mkdir -p $(ODIRSERVER)
+	@mkdir -p $(ODIRCLIENT)
+	@mkdir -p bin
 
 server: $(OBJSERVER)
-	gcc -o $(ODIRSERVER)/chat-server $^ $(CFLAGSSERVER) $(LIBS)
+	@echo 'Creazione eseguibile server'
+	@gcc -o $(ODIRSERVER)/chat-server $^ $(CFLAGSSERVER) $(LIBS)
+	@echo 'Server pronto'
 
 client: $(OBJCLIENT)
-	gcc -o $(ODIRCLIENT)/chat-client $^ $(CFLAGSCLIENT) $(LIBS)
+	@echo 'Creazione eseguibile client'
+	@gcc -o $(ODIRCLIENT)/chat-client $^ $(CFLAGSCLIENT) $(LIBS)
+	@echo 'Client pronto'
+	@echo 'Ricordati di eseguire make install per spostare gli eseguibili in bin/'
 
 # Copiamo i file eseguibli nella cartella bin
 install:
-	cp $(ODIRSERVER)/chat-server bin/chat-server
-	cp $(ODIRCLIENT)/chat-client bin/chat-client
+	@cp $(ODIRSERVER)/chat-server bin/chat-server
+	@cp $(ODIRCLIENT)/chat-client bin/chat-client
+	@echo 'Gli eseguibiili sono in bin/'
 
 # Rimuoviamo i file compilati
 clean:
-	rm -f $(ODIRSERVER)/*.o
-	rm -f $(ODIRCLIENT)/*.o
-	rm -f bin/*
+	@rm -f $(ODIRSERVER)/*.o
+	@rm -f $(ODIRCLIENT)/*.o
+	@rm -f bin/*
+	@echo 'Tutto pulito :-)'

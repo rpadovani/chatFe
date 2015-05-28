@@ -22,7 +22,7 @@ char *file_utenti;
 static hash_t HASH_TABLE;
 
 // Evitiamo race condition
-pthread_mutex_t mutex;
+static pthread_mutex_t mutex;
 
 /*
     Per gestire gli utenti connessi utilizziamo una lista che contiene gli
@@ -225,7 +225,7 @@ void elenca_utenti_connessi(char *risposta)
     posizione elemento_lista = PRIMOLISTA(utenti_connessi);
     pthread_mutex_unlock(&mutex);
 
-    // La variabile risposta deve aver già allocato un char
+    // La variabile risposta è stata allocata prima di essere passata
     risposta[0] = '\0';
 
     // Il primo nome utente non ha il separatore all'inizio

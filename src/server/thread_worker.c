@@ -1,3 +1,8 @@
+/*****************************************************************
+ *  ChatFe - Progetto di Sistemi Operativi '14/'15 UniFe         *
+ *                                                               *
+ *  Riccardo Padovani (115509) riccardo@rpadovani.com            *
+ *****************************************************************/
 #include <stdio.h>
 #include <fcntl.h>
 #include <stdlib.h>
@@ -20,6 +25,8 @@ int go;
 #define MSG_BRDCAST 'B'
 #define MSG_LIST 'I'
 #define MSG_LOGOUT 'X'
+#define MSG_LOGIN 'L'
+#define MSG_REGLOG 'R'
 
 // thread_worker.h
 void *thread_worker(void *connessione)
@@ -98,8 +105,30 @@ void *thread_worker(void *connessione)
 
             // Leggiamo la lunghezza della stringa
             if (read(socket_id, buffer, sizeof(int)) != sizeof(int)) {
-                printf("WOPS 1 %s\n", buffer);
+                fprintf(stderr, "Errore leggendo il messaggio\n");
+
+                /*
+                    Questo errore significa che qualcosa è andato storto
+                    leggendo dal buffer, forse perché il messaggio è stato
+                    strutturato male o per una qualche combinazione di messaggi
+                    che non sono riuscito a prevedere in caso di sviluppo.
+
+                    In ogni caso questo messaggio è inservibile, e dobbiamo fare
+                    in modo di salvare il client.
+
+                    Proviamo a pulire la socket, e poi ritornare in ascolto
+                    per nuovi messaggi.
+
+                    È probabilmente il punto più fragile di tutto il programma.
+                    Un disallineamento qua tra la struttura dei messaggi
+                    del server e del client è impossibile da recuperare senza
+                    ampliare il protocollo di comunicazione, cosa che esula
+                    dagli scopi del programma.
+                 */
+                read(socket_id, NULL, sizeof(char) * 1000);
+                continue;
             }
+
             /*
                 A questo punto sappiamo la lunghezza del prossimo campo da
                 leggere.
@@ -114,10 +143,15 @@ void *thread_worker(void *connessione)
                 Se non riusciamo a leggere tutto il campo, generiamo un errore
              */
             if (lunghezza_stringa > 0) {
+                // Prepariamo il buffer e inseriamogli il terminatore
                 buffer = realloc(buffer, lunghezza_stringa + 1);
                 buffer[lunghezza_stringa] = '\0';
+
                 if (read(socket_id, buffer, lunghezza_stringa) != lunghezza_stringa) {
-                    printf("WOPS 2\n");
+                    // Come sopra, fallimento critico, puliamo e riproviamo
+                    fprintf(stderr, "Errore leggendo il messaggio\n");
+                    read(socket_id, NULL, sizeof(char) * 1000);
+                    continue;
                 }
 
                 /*
@@ -127,8 +161,6 @@ void *thread_worker(void *connessione)
                     Per ogni messaggio che manda il client il sender è vuoto.
                     In alcuni casi anche il destinatario potrebbe essere
                     vuoto.
-
-                    Ad ognuno aggiungiamo il terminatore di stringa
                  */
                 switch (i) {
                     case 0:
@@ -139,20 +171,26 @@ void *thread_worker(void *connessione)
                         messaggio->msg = strdup(buffer);
                         bzero(buffer, strlen(buffer));
                         break;
-                    default:
-                        printf("Questo messaggio non sarà mai stampato\n");
                 }
             }
         }
 
-        if (messaggio->type == 'R') {
+        if (messaggio->type == MSG_REGLOG) {
+            /*
+                Iniziamo la procedura di registrazione. Teniamo una copia dello
+                username nella variaible globale preposta allo scopo
+             */
             // gestore_utenti.h
             buffer[0] = registrazione_utente(messaggio->msg, socket_id, &username);
+            // Informiamo il client sul successo o meno dell'operazione
             write(socket_id, buffer, 1);
-        } else if (messaggio->type == 'L') {
+        } else if (messaggio->type == MSG_LOGIN) {
+            // Teniamoci una copia dello username
             // gestore_utenti.h
             username = malloc(sizeof(strlen(messaggio->msg)) + 1);
             strcpy(username, messaggio->msg);
+
+            // Facciamo il login e informiamo l'utente del risultato
             buffer[0] = login_utente(messaggio->msg, socket_id);
             write(socket_id, buffer, 1);
         } else if (messaggio->type == MSG_LIST) {
@@ -207,8 +245,8 @@ void *thread_worker(void *connessione)
                 messaggio->msg
             );
 
+            // Logghiamo il messaggio e inseriamolo nel dispatcher
             log_messaggio_broadcast(username, messaggio->msg);
-
             inserisci(stringa_supporto, MSG_BRDCAST, -1);
             free(stringa_supporto);
         } else if (messaggio->type == MSG_SINGLE) {
@@ -244,7 +282,9 @@ void *thread_worker(void *connessione)
                 messaggio->msg
             );
 
-            log_messaggio_singolo(username, messaggio->receiver, messaggio->msg);
+            // Logghiamo e inseriamo nel buffer
+            log_messaggio_singolo(username, messaggio->receiver,
+                                  messaggio->msg);
 
             inserisci(
                 stringa_supporto,
@@ -253,9 +293,7 @@ void *thread_worker(void *connessione)
             );
             free(stringa_supporto);
         } else {
-            // TODO error
-            printf("->%c<- \n", messaggio->type);
-            printf("Cella in avaria, tento un atterraggio di fortuna\n");
+            fprintf(stderr, "Tipo di messaggio non riconosciuto\n");
         }
 
         // Resettiamo il buffer in modo da evitare errori alla prossima lettura

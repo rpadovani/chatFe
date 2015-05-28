@@ -1,3 +1,8 @@
+/*****************************************************************
+ *  ChatFe - Progetto di Sistemi Operativi '14/'15 UniFe         *
+ *                                                               *
+ *  Riccardo Padovani (115509) riccardo@rpadovani.com            *
+ *****************************************************************/
 #ifndef THREAD_WORKER_H
 #define THREAD_WORKER_H
 

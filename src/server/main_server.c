@@ -1,3 +1,8 @@
+/*****************************************************************
+ *  ChatFe - Progetto di Sistemi Operativi '14/'15 UniFe         *
+ *                                                               *
+ *  Riccardo Padovani (115509) riccardo@rpadovani.com            *
+ *****************************************************************/
 #include <stdio.h>
 #include <unistd.h>
 #include <pthread.h>
@@ -19,6 +24,8 @@
 /*
    La define SERVER_PORT definisce la porta su cui ci aspettiamo che il server
    sia in ascolto
+
+   XXX; se aggiornata qua, aggiornare anche la define in thread_main.c
 */
 #define SERVER_PORT 57223
 
@@ -38,10 +45,8 @@ char *file_utenti;
 */
 int main(int argc, char *argv[])
 {
-    /*
-        La variabile memorizza un riferimento al thread principale
-     */
-    pthread_t main_thread;
+    // La variabile memorizza un riferimento al thread principale
+    pthread_t main_thread_id;
 
     /*
         Il gestore dei segnali deve occuparsi anche di resettare SA_RESTART
@@ -65,6 +70,7 @@ int main(int argc, char *argv[])
         return -1;
     }
 
+    // Recuperiamo i file passati come argomento
     file_utenti = argv[1];
     file_log = argv[2];
 
@@ -87,23 +93,17 @@ int main(int argc, char *argv[])
             Primo branch dell'if: il pid è zero, quindi la fork è andata a buon
             fine e questo è il figlio, quindi possiamo lanciare thread main.
          */
-        int codice_ritorno = pthread_create(
-                                                &main_thread,
-                                                NULL,
-                                                &thread_main,
-                                                NULL
-                                            );
-
-        /*
-            Qualcosa è andato storto nella creazione del thread!
-            Segnaliamo l'errore e moriamo
-         */
-        if (codice_ritorno) {
+        if (pthread_create(&main_thread_id, NULL, &thread_main, NULL) != 0) {
+            /*
+                Qualcosa è andato storto nella creazione del thread!
+                Segnaliamo l'errore e usciamo
+             */
             fprintf(stderr, "Impossibile creare il thread main\n");
             return -1;
         }
 
-        pthread_join(main_thread, NULL);
+        // Attendiamo con pazienza la fine del thread
+        pthread_join(main_thread_id, NULL);
     } else if (pid == -1) {
         /*
             Il pid è -1, la fork è fallita: registriamo l'errore e terminiamo
@@ -113,16 +113,20 @@ int main(int argc, char *argv[])
         return -1;
     }
 
+    // Tutte le cose belle finiscono...
     return 0;
 }
 
 // main_server.h
 void signal_handler(int signal_number)
 {
+    // Fermiamo il server
     go = 0;
 
+    // gestione_utenti.h
     salva_hashtable();
 
+    // Prepariamoci a una falsa connessione
     int socket_id;
     struct sockaddr_in fake;
 
@@ -134,55 +138,11 @@ void signal_handler(int signal_number)
     fake.sin_addr.s_addr = inet_addr(SERVER_IP);
     fake.sin_port = htons(SERVER_PORT);
 
-    // Sblocchiamo l'accept
+    // Sblocchiamo l'accept e poi chiudiamo la connessione
     connect(socket_id, (struct sockaddr *)&fake, sizeof(fake));
     close(socket_id);
 
     // Mandiamo il messaggio di logout a tutti i client connessi
+    // thread_dispatcher.h
     inserisci("0007#logout", MSG_BRDCAST, -1);
 }
-/*
-
-int main()
-
-    fork()
-
-    if figlio
-
-        thread main()
-            while go
-                apri socket
-                inizializza tabella
-
-                if connessione
-                    lancia worker
-
-
-        thread worker()
-            while go
-                attendi richiesta
-                registra il comando nel log file
-
-                se comando == registrazione || listing
-                    esegui
-                altrimenti
-                    scrivi in buffer
-
-
-        thread dispatcher
-            while go
-                leggi buffer
-                estrai destinatario
-
-                se broadcast
-                    invia a tutti
-                altrimenti se connesso
-                    invia messaggio a utente
-                altrimenti
-                    scarta
-
-    else if error
-        std error
-
-    return
-*/
