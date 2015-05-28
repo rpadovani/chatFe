@@ -241,7 +241,6 @@ int main(int argc, char *argv[])
 
         // Liberiamo alcune delle variaibli utilizzate
         free(messaggio_registrazione);
-        free(char_da_modificare);
     } else {
         /*
             Messaggio di login, la struttura del messaggio da inviare
@@ -346,13 +345,13 @@ int main(int argc, char *argv[])
         verrà chiuso se in stdin l'utente scrive #logout
      */
     pthread_join(thread_listener_id, NULL);
-    pthread_kill(thread_writer_id, 9);
+    pthread_kill(thread_writer_id, 2);
 
     close(socket_id);
     return 0;
 
     pthread_join(thread_writer_id, NULL);
-    pthread_kill(thread_listener_id, 9);
+    pthread_kill(thread_listener_id, 2);
 
     close(socket_id);
     return 0;
