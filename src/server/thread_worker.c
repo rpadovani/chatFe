@@ -251,8 +251,8 @@ void *thread_worker(void *connessione)
             free(stringa_supporto);
         } else if (messaggio->type == MSG_SINGLE) {
             // gestione_utenti.h
-            if (esiste_utente(messaggio->receiver) == 1) {
-                // Se l'utente non esiste passiamo al ciclo succesivo
+            if (esiste_utente_loggato(messaggio->receiver) == 1) {
+                // Se l'utente non esiste o non è loggato passiamo al succesivo
                 continue;
             }
 

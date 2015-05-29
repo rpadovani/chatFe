@@ -282,12 +282,17 @@ void logout_utente(char *username)
 }
 
 // gestione_utenti.h
-int esiste_utente(char *username)
+int esiste_utente_loggato(char *username)
 {
     hdata_t *risultato_ricerca = NULL;
 
     pthread_mutex_lock(&mutex);
     if ((risultato_ricerca = CERCAHASH(username, HASH_TABLE)) == NULL) {
+        pthread_mutex_unlock(&mutex);
+        return 1;
+    }
+
+    if (risultato_ricerca->sockid == -1) {
         pthread_mutex_unlock(&mutex);
         return 1;
     }

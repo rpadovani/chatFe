@@ -52,10 +52,10 @@ void elenca_utenti_connessi(char *risposta);
 void logout_utente(char *username);
 
 /*
-    La funzione ritorna -1 se l'utente passato come argomento non esiste o 0
-    se esiste
+    La funzione ritorna 1 se l'utente passato come argomento non esiste o non
+    è loggato, 0 altrimenti
  */
-int esiste_utente(char *username);
+int esiste_utente_loggato(char *username);
 
 /*
     Dato uno username, la funzione ritorna il sockid corrispondente.
@@ -63,7 +63,7 @@ int esiste_utente(char *username);
     -1 sia per gli utenti disconnessi (perché quello è effettivamente il loro
     sockid) che per gli utenti non presenti nella hash table.
 
-    Per verificare se un utente esiste utilizzare esiste_utente()
+    Per verificare se un utente esiste utilizzare esiste_utente_loggato()
  */
 int sockid_username(char *username);
 
