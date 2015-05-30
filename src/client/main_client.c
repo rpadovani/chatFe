@@ -55,15 +55,10 @@ int main(int argc, char *argv[])
 
         Il messaggio_registrazione servirà per contenere una copia del comando
         di registrazione da inviare al server, che poi sarà inviato da
-        buffer tramite messaggio_invio.
-
-        messaggio_invio si occupa di mantenere una copia del comando da inviare,
-        che poi sarà copiato nel buffer e a cui sarà aggiunta la lunghezza
-        del messaggio stesso
+        buffer.
      */
     char *username;
     char *messaggio_registrazione;
-    char *messaggio_invio = malloc(sizeof(char));
 
     /*
         Per inviare il buffer dobbiamo saperne la dimensione.
@@ -184,36 +179,25 @@ int main(int argc, char *argv[])
         /*
             Mesaggio di login, la struttura del messaggio da inviare
             al server è la seguente:
-            - 1 byte che rappresenta il tipo di connessione
+            - 1 byte che rappresenta il tipo di messaggio
             - 4 byte (1 int) che rappresentano la dimensione del
                 campo destinatario (in questo caso 0)
             - 4 byte (1 int) che rappresenta la lunghezza del messaggio
             - n byte di messaggio, in base alla lunghezza dello
                 stesso
+            - 1 byte di terminatore di stringa aggiunto da sprintf
          */
         dimensione_buffer = 1 + 4 + 4 + strlen(messaggio_registrazione)
                                                         + strlen(username) + 1;
-        messaggio_invio =
-                malloc(strlen(messaggio_registrazione) + strlen(username) + 1);
-        memcpy(messaggio_invio, username, strlen(username));
-        memcpy(messaggio_invio + strlen(username), ":", 1);
-        memcpy(
-            messaggio_invio + strlen(username) + 1,
-            messaggio_registrazione,
-            strlen(messaggio_registrazione)
-        );
 
-        /*
-            sprintf inserisce automaticamente un terminatore di
-            stringa quindi lasciamo lo spazio anche per quello
-         */
         buffer = realloc(buffer, dimensione_buffer);
         sprintf(
             buffer,
-            "%c0000%04zu%s",
+            "%c0000%04zu%s:%s",
             MSG_REGLOG,
             strlen(messaggio_registrazione) + strlen(username) + 1,
-            messaggio_invio
+            username,
+            messaggio_registrazione
         );
 
         /*
@@ -304,7 +288,6 @@ int main(int argc, char *argv[])
 
     // Liberiamo tutte le variabili che abbiamo utilizzato e non servono più
     free(buffer);
-    free(messaggio_invio);
     free(username);
 
     /*
