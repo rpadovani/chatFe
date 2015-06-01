@@ -10,6 +10,7 @@ Una volta deciso questa struttura di base nel server, ho scritto del pseudocodic
 Dal pseudocodice ho iniziato poi a scrivere le basi del codice vero e proprio: il mio primo obiettivo era creare un programma in grado di essere eseguito, che contenesse almeno un header, per poter poi scrivere il *Makefile*, cosa che non avevo mai fatto senza usare *build system* (come *cmake* o *qmake*).
 Ho quindi creato un programma davvero basilare, che si occupava di forkarsi e lanciare un thread in background (thread che stampava un messaggio e si chiudeva).
 Con questo programma di base sono poi riuscito a lavorare sul *Makefile*: per quanto la documentazione in rete sia ricca, è stata comunque una cosa che mi ha portato via vario tempo: inoltre ho dovuto migliorarlo lungo tutto lo sviluppo del programma.
+Nel Makefile ho impostato come flag per `gcc` sia `-Wall`, come richiesto dalla consenga, che `-Werror`, che trasforma ogni warning in un errore. In questo modo mi sono forzato a correggere i warning man mano che si presentavano, e a non lasciarli in sospeso da correggere in un secondo momento.
 In ogni caso, una volta creato il Makefile lo sviluppo è stato più facile, poiché è si è integrato con il mio editor (Atom) e potevo compilare i sorgenti direttamente dall'editor, che fornisce funzioni di debug e correzione molto utili.
 
 ### Il server
@@ -55,7 +56,26 @@ printf(TRUE);
 return 0;
 ```
 
+### Ulteriori letture
+
+Un'interessante e dettagliata lettura sull'evoluzione e le tempistiche di sviluppo del codice si può avere guardando la [history](https://github.com/rpadovani/chatFe/commits/master) dei commit su GitHub.
+
 ## Struttura del codice
+
+### I file
+
+Il codice (presente nella directory `src/`) è diviso in due directory principali, quella riservata al client e quella riservata al server.
+Entrambe le directory poi hanno una sola altra directory al loro interno, chiamata `include`, che contiene gli header di tutti i file.
+
+Il client è organizzato in maniera molto semplice. C'è un file principale, `main_client.c`, che si occupa di verificare gli argomenti presi in input dal client, aprire una connessione con il server, effettuare il login (o la registrazione) e, se tutto è andato bene, di lanciare i due thread che si occupano di dialogare con il server:
+ - `thread_listener.c` si occupa di aspettare le comunicazioni dal server e printarle in `stdout`. L'unica cosa particolare è che nel caso arrivi un messaggio speciale (`0007#logout`) dal server si occupa di terminare il client
+ - `thread_writer.c` si occupa di prendere da `stdin` il messaggio dell'utente, verificare la sua validità, strutturarlo nel formato scelto per comunicare con il server ed inviarlo al server.
+
+Il server invece è leggermente più complicato: ci sono due file `lista.c` e `hash.c`, che sono quelli forniti con la consegna. Di questi file è stato creado l'header inserito in `include/`. Forniscono funzioni per gestire le liste e le hash table.
+I file `log.c` e `gestione_utent.c` forniscono funzioni di supporto per, rispettivamente, scrivere sul file di log e per gestire gli utenti. `gestione_utenti.c` in particolare è l'unico file del programma che può scrivere sulla hash table durante l'esecuzione e sul file sul quale vengono salvati gli utenti. In queto modo la mutua esclusione per questi due elementi deve essere gestita solo all'interno di questo file.
+Il file `main_server.c` non si occupa di fare molto: si forka per lanciare in background i thread che si occupano del server. 
+
+Il cuore del programma sta nei tre file che si occupano dei rispettivi thread.
 
 ### Protocollo di comunicazione
 
@@ -63,8 +83,7 @@ return 0;
 
 Per quanto riguarda i messaggi inviati dal server al client la struttura è basilare. La comunicazione inizia con un int (quindi 4 byte) sul nel quale viene inserito il numero di caratteri che seguono questo int. In questo modo il client si occupa di leggere 4 byte, e poi di leggere n byte così come indicati nei primi 4 byte.
 
-La struttura è quindi:
-`%04i%s`
+La struttura è quindi:`%04i%s`
 
 C'è un unico messaggio speciale, ed è il messaggio `0007#logout`, che indica al client che il server remoto è stato spento e che quindi deve disconnettersi.
 
@@ -77,6 +96,8 @@ Dopodiché segue un intero che indica la lunghezza del campo successivo, che è 
 Il campo mittente è inutile da inserire, perché il thread worker che riceve il messaggio sa già qual'è lo username di chi invia il messaggio, essendo ogni worker dedicato a una client solo. 
 
 Il campo destinatario può essere nullo, nel caso dei messaggi di servizio (registrazione, login, logout). In tal caso l'int che descrive la lunghezza è comunque presente, ma settato a 0.
+
+La struttura è quindi: `%c%04i%s%04i%s`
 
 **Sia nella comunicazione con il server, che con il client, non viene inserito il terminatore di stringa.** Infatti, sapendo la lunghezza in byte del messaggio, sarebbe un byte inviato in più inutilmente.
 
@@ -101,3 +122,5 @@ Inoltre, l'utilizzo di strumenti di supporto allo sviluppo quali *git* per il ve
 Il programma di per sé ha evidenti limiti e lacune - prima fra tutte, una quasi totale mancanza di controllo degli errori e nessuna forma di resilienza. Una stringa inviata male da parte di un client (o un generico errore di comunicazione) danneggia in modo pressoché irreparabile il flusso di lavoro del thread worker, costringendo a un riavvio del client.
 
 Per quanto riguarda la sicurezza è evidente che non c'è nessun controllo per la sanitazzione dei dati, cosa che permetterebbe ad un eventuale malintenzionato di prendere il controllo del processo.
+
+Molti casi d'uso non sono stati considerati, ad esempio se il server viene lanciato più volte su porte diverse ma con gli stessi file di log e degli utenti si verificano conflitti.
