@@ -1,3 +1,9 @@
+/*****************************************************************
+ *  ChatFe - Progetto di Sistemi Operativi '14/'15 UniFe         *
+ *                                                               *
+ *  Riccardo Padovani (115509) riccardo@rpadovani.com            *
+ *****************************************************************/
+
 # Il progetto ChatFe
 
 ## Storia del progetto
@@ -18,8 +24,6 @@ In ogni caso, una volta creato il Makefile lo sviluppo è stato più facile, poi
 Una volta creato il makefile la mia attenzione si è concentrata sul server - in un primo momento sul thread main, per poter gestire le eventuali eccezioni e il lancio di worker per ogni client connesso. In un secondo momento sull'implementazione di quella parte di worker che si occupa della ricezione.
 Per testare le varie funzioni che scrivevo usavo *telnet*, per verificare che il server ricevesse e processasse i vari messaggi secondo la loro tipologia.
 In questo periodo dello sviluppo il server era stato studiato per ricevere i messaggi da *telnet*, c'era quindi del codice in più per gestire i byte di controllo che invia telnet.
-
-In questa fase del lavoro non ho trovato particolari difficoltà, oltre a quelle che normalmente si trovano lavorando in C (memoria non allocata od allocata nelle dimensioni sbagliate, riferimento al valore dei puntatori invece che al valore della cella puntata etc.).
 
 ### Il client
 
@@ -44,7 +48,7 @@ if (ok == TRUE) {
 }
 ```
 
-con una forma molto più leggibile del tipo 
+con una forma molto più leggibile del tipo
 
 ```
 if (ok != TRUE) {
@@ -73,9 +77,12 @@ Il client è organizzato in maniera molto semplice. C'è un file principale, `ma
 
 Il server invece è leggermente più complicato: ci sono due file `lista.c` e `hash.c`, che sono quelli forniti con la consegna. Di questi file è stato creado l'header inserito in `include/`. Forniscono funzioni per gestire le liste e le hash table.
 I file `log.c` e `gestione_utent.c` forniscono funzioni di supporto per, rispettivamente, scrivere sul file di log e per gestire gli utenti. `gestione_utenti.c` in particolare è l'unico file del programma che può scrivere sulla hash table durante l'esecuzione e sul file sul quale vengono salvati gli utenti. In queto modo la mutua esclusione per questi due elementi deve essere gestita solo all'interno di questo file.
-Il file `main_server.c` non si occupa di fare molto: si forka per lanciare in background i thread che si occupano del server. 
+Il file `main_server.c` non si occupa di fare molto: si forka per lanciare in background i thread che si occupano del server.
 
 Il cuore del programma sta nei tre file che si occupano dei rispettivi thread.
+Il `thread_main.c` si occupa di rimanere in attesa di nuove richieste di connessione e di lanciare un thread worker per ogni nuova connessione.
+Il `thread_worker.c` si occupa di ricevere i messaggi da ogni client connesso, e di lanciare le funzioni richieste nel caso di azioni speciali (*#ls*, *#logout*  e registrazione) o di depositare il messaggio nel `thread_dispatcher.c`.
+Il `thread_dispatcher.c` a sua volta si occupa di gestire un buffer circolare per inviare i messaggi che ivi sono depositati ai destinatari preposti.
 
 ### Protocollo di comunicazione
 
@@ -93,13 +100,20 @@ I messaggi tra client e server hanno una struttura simile, anche se più complic
 Il messaggio inizia con un char che rappresenta il tipo di messaggio inviato (registrazione, messaggio singolo, broadcast, etc.)
 Dopodiché segue un intero che indica la lunghezza del campo successivo, che è il campo destinatario, e poi un altro int che indica la lunghezza dell'ultimo campo, il campo messaggio.
 
-Il campo mittente è inutile da inserire, perché il thread worker che riceve il messaggio sa già qual'è lo username di chi invia il messaggio, essendo ogni worker dedicato a una client solo. 
+Il campo mittente è inutile da inserire, perché il thread worker che riceve il messaggio sa già qual'è lo username di chi invia il messaggio, essendo ogni worker dedicato a una client solo.
 
 Il campo destinatario può essere nullo, nel caso dei messaggi di servizio (registrazione, login, logout). In tal caso l'int che descrive la lunghezza è comunque presente, ma settato a 0.
 
 La struttura è quindi: `%c%04i%s%04i%s`
 
 **Sia nella comunicazione con il server, che con il client, non viene inserito il terminatore di stringa.** Infatti, sapendo la lunghezza in byte del messaggio, sarebbe un byte inviato in più inutilmente.
+
+## Difficoltà incontrate
+
+In generale non ho trovato particolari difficoltà, oltre a quelle che normalmente si trovano lavorando in C (memoria non allocata od allocata nelle dimensioni sbagliate, riferimento al valore dei puntatori invece che al valore della cella puntata etc.). Difficoltà che sono man mano diminuite più prendevo confidenza con il codice.
+
+Un particolare su cui ho perso abbastanza tempo è stata la terminazione del server. Una volta intercettato il segnale e posto la variabile globale `go` a 0 mi sono accorto che le funzioni nel codice che attendevano un evento (quali `accept`, `read`, i lock sui mutex) non venivano interrotti. Leggendo il manuale di `signal()` mi sono accorto che avrei dovuto usare `sig_action()`, che permette di non settare la flag `SA_RESTART` (presente di default in `signal()`). Se `SA_RESTART` non è settata le funzioni di cui sopra si interrompono con un errore. Il problema è che bisogna installare un signal handler per ogni thread che si è aperto.
+Per semplificare quindi il codice ho deciso di installare un solo signal handler, che si occupassse di terminare il resto del codice facendo delle finte chiamate che sbloccahino il resto, per esempio creado una nuova connessione per risvegliare l'accept. Non è sicuramente la soluzione più pulita, ma è quella più facile da implementare.
 
 ## Constatazioni sulla qualità del codice
 
